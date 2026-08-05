@@ -54,6 +54,8 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
 .discount-row .field{flex:1;margin-bottom:0}
 .discount-toggle-row{display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none;flex-shrink:0}
 .discount-toggle-label{font-size:.75rem;color:var(--text);font-weight:500;white-space:nowrap}
+.discount-status{font-size:.7rem;color:var(--accent);background:linear-gradient(135deg,var(--p4),var(--p3));padding:3px 8px;border-radius:4px;margin-top:4px;display:flex;align-items:center;gap:4px}
+.discount-status::before{content:'↘'}
 .toggle{position:relative;width:44px;height:24px;flex-shrink:0;cursor:pointer;display:inline-block;vertical-align:middle}
 .toggle input{opacity:0;width:0;height:0;position:absolute}
 .toggle .slider{position:absolute;top:0;left:0;right:0;bottom:0;background:#d0d0d0;border-radius:24px;transition:.3s cubic-bezier(.4,0,.2,1);box-shadow:inset 0 1px 3px rgba(0,0,0,.15)}
@@ -67,7 +69,7 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
 .rate-item label{font-size:.7rem;color:var(--accent2);font-weight:600;margin-bottom:1px;display:block}
 .rate-item input[type="number"]{width:100%;padding:5px 4px;border:2px solid #e0e0e0;border-radius:6px;font-size:.82rem;background:#fafafa;text-align:center}
 .rate-item input[type="number"]:focus{border-color:var(--accent);outline:none;background:#fff}
-.rate-monthly{width:100%;padding:4px;border:1.5px dashed #c5cae9;border-radius:5px;font-size:.72rem;background:#fff;text-align:center;color:var(--text);font-weight:500;margin-top:4px}
+.rate-monthly{width:100%;padding:4px 2px;border:1.5px dashed #c5cae9;border-radius:5px;font-size:.75rem;background:#fff;text-align:center;color:var(--text);font-weight:400;margin-top:4px}
 .rate-monthly:focus{border-color:var(--accent);outline:none;background:#f3e5f5}
 
 /* Radio group */
@@ -118,6 +120,18 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
 .amort-table tr:hover td{background:rgba(0,0,0,.02)}
 .amort-table .row-total td{font-weight:700;color:var(--text);border-top:2px solid #e0e0e0;background:#f5f5f5}
 .scroll-hint{text-align:center;font-size:.75rem;color:var(--muted);margin-top:4px}
+
+/* Home loan rate periods */
+.rate-periods{display:flex;flex-direction:column;gap:4px}
+.rate-period{display:flex;gap:4px;align-items:center;background:var(--p3);border-radius:6px;padding:4px 6px}
+.rate-period select,.rate-period input{font-size:.75rem;padding:4px;border:1.5px solid #e0e0e0;border-radius:4px;background:#fff}
+.rate-period select{flex:0 0 auto;width:auto}
+.rate-period input[type="number"]{width:55px;text-align:center}
+.rate-period .rp-type{flex:0 0 auto}
+.rate-period .rp-val{flex:0 0 65px}
+.rate-period .rp-del{background:none;border:none;color:#ef5350;cursor:pointer;font-size:.85rem;padding:2px 4px;flex-shrink:0}
+.rate-period .rp-del:hover{background:rgba(239,83,80,.1);border-radius:4px}
+.rate-period .rp-preview{font-size:.68rem;color:var(--accent);font-weight:500;min-width:50px;text-align:right}
 
 /* History */
 .history{background:var(--card);border-radius:var(--r);padding:14px;box-shadow:var(--shadow);margin-bottom:10px}
@@ -249,6 +263,7 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
               <span class="down-suffix">฿</span>
             </div>
           </div>
+          <div id="discount-status" class="discount-status" style="display:none"></div>
         </div>
         <div class="field">
           <label>ดอกเบี้ย (% ต่อปี) — แยกตามงวด</label>
@@ -294,12 +309,26 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
         </div>
         <div class="field">
           <label>ระยะเวลา (ปี)</label>
-          <input type="number" id="home-term" value="25" min="1" max="30">
+          <input type="number" id="home-term" value="25" min="1" max="30" oninput="recalcHomePreview()">
         </div>
         <div class="field">
-          <label>อัตราดอกเบี้ย (% ต่อปี)</label>
-          <input type="number" id="home-rate" step="0.1" value="4.5" min="0">
+          <label>MRR ปัจจุบัน (% ต่อปี)</label>
+          <input type="number" id="home-mrr" step="0.01" value="6.85" min="0" oninput="recalcHomePreview()">
         </div>
+        <div class="field">
+          <label>ประเภทลูกค้า</label>
+          <div class="radio-group">
+            <label><input type="radio" name="home-customer" value="welfare" onchange="applyHomePreset()"><span>สวัสดิการ</span></label>
+            <label><input type="radio" name="home-customer" value="retail" checked onchange="applyHomePreset()"><span>รายย่อย</span></label>
+            <label><input type="radio" name="home-customer" value="equipment" onchange="applyHomePreset()"><span>อุปกรณ์ฯ</span></label>
+          </div>
+        </div>
+        <div class="field">
+          <label>อัตราดอกเบี้ยตามช่วงเวลา</label>
+          <div id="home-rate-periods"></div>
+          <button class="btn btn-secondary" onclick="addHomeRatePeriod()" style="margin-top:6px;font-size:.8rem;padding:6px">+ เพิ่มช่วง</button>
+        </div>
+        <div style="font-size:.72rem;color:var(--muted);margin:4px 0">💡 เลือกประเภทลูกค้าเพื่อเติมค่าเริ่มต้นอัตโนมัติ</div>
         <button class="btn btn-calc" onclick="calcHome()">คำนวณ</button>
       </div>
 
@@ -478,13 +507,44 @@ function rateChanged(months){
 function monthlyChanged(months){
   if(_syncing)return;
   _syncing=true;
-  const loan=getLoan();
+  const price=getVal('car-price');
+  const rate=+document.getElementById('rate'+months).value;
   const method=document.querySelector('input[name="car-method"]:checked').value;
   const monthlyVal=+(document.getElementById('pv'+months).value.replace(/[^0-9]/g,''));
-  const rateEl=document.getElementById('rate'+months);
-  if(loan<=0||monthlyVal<=0){rateEl.value='';_syncing=false;return}
-  const rate=solveRate(loan,monthlyVal,months,method);
-  rateEl.value=rate>0?Math.round(rate*100)/100:'';
+  if(!price||monthlyVal<=0||!rate||rate<=0){_syncing=false;return}
+
+  // Solve for loan amount that gives this monthly payment
+  let loan;
+  if(method==='flat'){
+    // monthly = (loan + loan*rate/100*(months/12)) / months
+    // loan = monthly * months / (1 + rate/100 * months/12)
+    const factor=1+rate/100*(months/12);
+    loan=monthlyVal*months/factor;
+  }else{
+    // Effective: loan = monthly * ((1+r)^n - 1) / (r * (1+r)^n)
+    const r=rate/100/12;
+    if(r>0){
+      const pow=Math.pow(1+r,months);
+      loan=monthlyVal*(pow-1)/(r*pow);
+    }else{
+      loan=monthlyVal*months;
+    }
+  }
+
+  // downPayment = price - loan
+  let downPayment=Math.max(0,price-loan);
+  const discount=getVal('car-discount');
+  const discountDown=document.getElementById('car-discount-down').checked;
+  // If discount is deducted from down, the user's actual down = downPayment - discount
+  if(discountDown&&discount>0){
+    downPayment=Math.max(0,downPayment-discount);
+  }
+
+  // Update down payment fields
+  const pctEl=document.getElementById('car-down-pct');
+  const amtEl=document.getElementById('car-down-amt');
+  amtEl.value=fmt(Math.round(downPayment));
+  if(price>0)pctEl.value=Math.round(downPayment/price*10000)/100;
   _syncing=false;
 }
 
@@ -509,12 +569,35 @@ function livePreview(){
   if(el)el.addEventListener('input',livePreview);
 });
 document.querySelectorAll('input[name="car-method"]').forEach(r=>r.addEventListener('change',livePreview));
-document.getElementById('car-discount-down').addEventListener('change',livePreview);
+
+// Toggle discount-down: update status + sync down payment
+function updateDiscountStatus(){
+  const discount=getVal('car-discount');
+  const isDown=document.getElementById('car-discount-down').checked;
+  const statusEl=document.getElementById('discount-status');
+  if(isDown&&discount>0){
+    statusEl.style.display='';
+    statusEl.textContent='เงินดาวน์หักจากส่วนลด '+fmt(discount)+' บาท';
+  }else{
+    statusEl.style.display='none';
+  }
+  // Sync down payment amount to reflect discount
+  syncDown('car','pct');
+  livePreview();
+}
+document.getElementById('car-discount-down').addEventListener('change',updateDiscountStatus);
+document.getElementById('car-discount').addEventListener('input',updateDiscountStatus);
+updateDiscountStatus();
 
 // Hook monthly payment inputs: input + keyup + change for mobile reliability
 [48,60,72,84].forEach(m=>{
   const el=document.getElementById('pv'+m);
   if(!el)return;
+  // Format with comma on input
+  el.addEventListener('input',function(){
+    let raw=this.value.replace(/[^0-9]/g,'');
+    if(raw){this.value=parseInt(raw).toLocaleString('en-US');}
+  });
   const handler=function(){monthlyChanged(m)};
   el.addEventListener('input',handler);
   el.addEventListener('keyup',handler);
@@ -526,14 +609,23 @@ livePreview();
 // --- Down payment sync ---
 function syncDown(type,source){
   const price=getVal(type==='car'?'car-price':'home-price');
+  const discount=type==='car'?getVal('car-discount'):0;
+  const discountDown=type==='car'&&document.getElementById('car-discount-down').checked;
   const pctEl=document.getElementById(type+'-down-pct');
   const amtEl=document.getElementById(type+'-down-amt');
   if(source==='pct'){
     const pct=parseFloat(pctEl.value)||0;
-    if(price>0){amtEl.value=fmt(price*pct/100);}
+    if(price>0){
+      let amt=price*pct/100;
+      if(discountDown&&discount>0)amt=Math.max(0,amt-discount);
+      amtEl.value=fmt(amt);
+    }
   }else{
     const amt=getVal(type+'-down-amt');
-    if(price>0){pctEl.value=Math.round(amt/price*10000)/100;}
+    if(price>0){
+      const effective=discountDown?amt+discount:amt;
+      pctEl.value=Math.round(effective/price*10000)/100;
+    }
   }
 }
 function syncDiscount(){/* just formats, calc uses getVal */}
@@ -572,7 +664,7 @@ function switchTab(tab){
 
 // --- Car calc ---
 function calcCar(){
-  const name=document.getElementById('car-name').value.trim();
+  let name=document.getElementById('car-name').value.trim();
   const price=getVal('car-price');
   const discount=getVal('car-discount');
   const discountDown=document.getElementById('car-discount-down').checked;
@@ -580,6 +672,11 @@ function calcCar(){
   const downAmt=getVal('car-down-amt');
   const method=document.querySelector('input[name="car-method"]:checked').value;
   if(!price){alert('กรุณากรอกราคารถ');return}
+  // Auto-name if empty
+  if(!name){
+    const h=getHistory().filter(x=>x.type==='car');
+    name='รถยนต์ '+(h.length+1);
+  }
 
   let effectivePrice=price, effectiveDown, loan, actualPct;
   if(discountDown){
@@ -659,49 +756,146 @@ function calcCar(){
 }
 
 // --- Home calc ---
+// --- Home loan rate periods ---
+let homeRatePeriods=[
+  {startMonth:1,endMonth:12,type:'fixed',value:2.20},
+  {startMonth:13,endMonth:24,type:'fixed',value:2.90},
+  {startMonth:25,endMonth:36,type:'mrr',adjust:-2.645},
+  {startMonth:37,endMonth:60,type:'mrr',adjust:-2.00},
+  {startMonth:61,endMonth:999,type:'mrr',adjust:-1.00}
+];
+
+const HOME_PRESETS={
+  welfare:[
+    {startMonth:1,endMonth:12,type:'fixed',value:2.20},
+    {startMonth:13,endMonth:24,type:'fixed',value:2.90},
+    {startMonth:25,endMonth:36,type:'mrr',adjust:-2.645},
+    {startMonth:37,endMonth:60,type:'mrr',adjust:-2.00},
+    {startMonth:61,endMonth:999,type:'mrr',adjust:-1.00}
+  ],
+  retail:[
+    {startMonth:1,endMonth:6,type:'fixed',value:0},
+    {startMonth:7,endMonth:24,type:'mrr',adjust:-3.35},
+    {startMonth:25,endMonth:36,type:'mrr',adjust:-3.00},
+    {startMonth:37,endMonth:60,type:'mrr',adjust:-2.00},
+    {startMonth:61,endMonth:999,type:'mrr',adjust:-0.50}
+  ],
+  equipment:[
+    {startMonth:1,endMonth:12,type:'fixed',value:2.20},
+    {startMonth:13,endMonth:24,type:'fixed',value:2.90},
+    {startMonth:25,endMonth:36,type:'mrr',adjust:-2.645},
+    {startMonth:37,endMonth:60,type:'mrr',adjust:-2.00},
+    {startMonth:61,endMonth:999,type:'mrr',adjust:0}
+  ]
+};
+
+function renderHomeRatePeriods(){
+  const el=document.getElementById('home-rate-periods');
+  const mrr=parseFloat(document.getElementById('home-mrr').value)||0;
+  el.innerHTML=homeRatePeriods.map((p,i)=>{
+    const rateDisplay=p.type==='fixed'?p.value+'%':('MRR'+(p.adjust>=0?'+':'')+p.adjust+'%='+Math.max(0,mrr+p.adjust).toFixed(2)+'%');
+    const endLabel=p.endMonth>=999?'จนจบ':'-'+p.endMonth;
+    return `<div class="rate-period">
+      <select onchange="homeRatePeriods[${i}].type=this.value;renderHomeRatePeriods()">
+        <option value="fixed"${p.type==='fixed'?' selected':''}>คงที่</option>
+        <option value="mrr"${p.type==='mrr'?' selected':''}>MRR±</option>
+      </select>
+      <input type="number" value="${p.startMonth}" min="1" onchange="homeRatePeriods[${i}].startMonth=+this.value;renderHomeRatePeriods()" placeholder="เดือน" style="width:40px">
+      <span style="font-size:.7rem;color:var(--muted)">–</span>
+      <input type="number" value="${p.endMonth>=999?'':p.endMonth}" min="1" onchange="homeRatePeriods[${i}].endMonth=this.value?+this.value:999;renderHomeRatePeriods()" placeholder="จบ" style="width:40px">
+      ${p.type==='fixed'
+        ?`<input type="number" class="rp-val" value="${p.value}" step="0.01" onchange="homeRatePeriods[${i}].value=+this.value;renderHomeRatePeriods()">`
+        :`<input type="number" class="rp-val" value="${p.adjust}" step="0.001" onchange="homeRatePeriods[${i}].adjust=+this.value;renderHomeRatePeriods()">`
+      }
+      <span class="rp-preview">${rateDisplay}</span>
+      <button class="rp-del" onclick="homeRatePeriods.splice(${i},1);renderHomeRatePeriods()">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function addHomeRatePeriod(){
+  const last=homeRatePeriods[homeRatePeriods.length-1];
+  const start=last?last.endMonth+1:1;
+  homeRatePeriods.push({startMonth:start,endMonth:start+11,type:'mrr',adjust:-2.00});
+  renderHomeRatePeriods();
+}
+
+function applyHomePreset(){
+  const type=document.querySelector('input[name="home-customer"]:checked').value;
+  if(HOME_PRESETS[type]){
+    homeRatePeriods=JSON.parse(JSON.stringify(HOME_PRESETS[type]));
+    renderHomeRatePeriods();
+  }
+}
+
+function recalcHomePreview(){renderHomeRatePeriods()}
+renderHomeRatePeriods();
+
 function calcHome(){
   const price=getVal('home-price');
   const downPct=parseFloat(document.getElementById('home-down-pct').value)||0;
   const downAmt=getVal('home-down-amt');
   const years=+document.getElementById('home-term').value;
-  const rate=+document.getElementById('home-rate').value;
+  const mrr=parseFloat(document.getElementById('home-mrr').value)||0;
   if(!price){alert('กรุณากรอกราคาบ้าน');return}
-  if(!rate){alert('กรุณากรอกอัตราดอกเบี้ย');return}
+  if(!homeRatePeriods.length){alert('กรุณาเพิ่มอัตราดอกเบี้ยอย่างน้อย 1 ช่วง');return}
 
   let loan;
   const downAmtCalc=price*downPct/100;
   const actualDown=downAmt>0?downAmt:downAmtCalc;
   const actualPct=downAmt>0?(price>0?Math.round(downAmt/price*10000)/100:0):downPct;
   loan=price-actualDown;
+  if(loan<=0){alert('วงเงินกู้ต้องมากกว่า 0');return}
 
-  const months=years*12;
-  const r=rate/100/12;
-  const monthly=r>0?loan*r*Math.pow(1+r,months)/(Math.pow(1+r,months)-1):loan/months;
+  const totalMonths=years*12;
+  // Build rate schedule: month → rate
+  const monthRates=[];
+  for(let i=0;i<totalMonths;i++){
+    const month=i+1;
+    let rate=0;
+    for(const p of homeRatePeriods){
+      if(month>=p.startMonth&&month<=p.endMonth){
+        rate=p.type==='fixed'?p.value:Math.max(0,mrr+p.adjust);
+        break;
+      }
+    }
+    monthRates.push(rate);
+  }
 
+  // Amortization with variable rates (reducing balance)
   let balance=loan,schedule=[],totalInterest=0,totalPrincipal=0;
-  for(let i=1;i<=months;i++){
+  for(let i=0;i<totalMonths;i++){
+    const r=monthRates[i]/100/12;
+    const remaining=totalMonths-i;
+    // Calculate monthly payment for remaining term with current rate
+    let payment;
+    if(r>0){
+      payment=balance*r*Math.pow(1+r,remaining)/(Math.pow(1+r,remaining)-1);
+    }else{
+      payment=balance/remaining;
+    }
     const ip=balance*r;
-    const pp=monthly-ip;
+    const pp=payment-ip;
     balance=Math.max(0,balance-pp);
     totalInterest+=ip;totalPrincipal+=pp;
-    schedule.push({no:i,payment:monthly,principal:pp,interest:ip,balance});
+    schedule.push({no:i+1,payment,principal:pp,interest:ip,balance,rate:monthRates[i]});
   }
-  const totalPayment=monthly*months;
+  const totalPayment=totalPrincipal+totalInterest;
 
   const downLabel=`ดาวน์ ${actualPct}% = ${fmt(actualDown)} บาท`;
   let info=`<div class="info">`
     +`ราคาบ้าน <b>${fmt(price)}</b> บาท | ${downLabel}<br>`
-    +`วงเงินกู้ <b>${fmt(loan)}</b> บาท | ดอกเบี้ย ${rate}% | ${years} ปี (${months} งวด)<br>`
-    +`ค่างวด/เดือน <b>${fmt(monthly)}</b> บาท</div>`;
+    +`วงเงินกู้ <b>${fmt(loan)}</b> บาท | ${years} ปี (${totalMonths} งวด)<br>`
+    +`ค่างวด/เดือน <b>${fmt(schedule[0].payment)}</b> บาท (งวดแรก)</div>`;
 
   let table=`<div class="amort-wrap"><table class="amort-table"><thead><tr>`
-    +`<th>#</th><th>ค่างวด</th><th>เงินต้น</th><th>ดอกเบี้ย</th><th>คงเหลือ</th>`
+    +`<th>#</th><th>ค่างวด</th><th>เงินต้น</th><th>ดอกเบี้ย</th><th>%</th><th>คงเหลือ</th>`
     +`</tr></thead><tbody>`;
   schedule.forEach(s=>{
-    table+=`<tr><td>${s.no}</td><td>${fmt(s.payment)}</td><td>${fmt(s.principal)}</td><td>${fmt(s.interest)}</td><td>${fmt(s.balance)}</td></tr>`;
+    table+=`<tr><td>${s.no}</td><td>${fmt(s.payment)}</td><td>${fmt(s.principal)}</td><td>${fmt(s.interest)}</td><td>${s.rate.toFixed(2)}</td><td>${fmt(s.balance)}</td></tr>`;
   });
-  table+=`<tr class="row-total"><td>รวม</td><td>${fmt(totalPayment)}</td><td>${fmt(totalPrincipal)}</td><td>${fmt(totalInterest)}</td><td>0</td></tr>`;
-  table+=`</tbody></table></div><div class="scroll-hint">↕ เลื่อนดูทุกงวด (${months} งวด)</div>`;
+  table+=`<tr class="row-total"><td>รวม</td><td>${fmt(totalPayment)}</td><td>${fmt(totalPrincipal)}</td><td>${fmt(totalInterest)}</td><td></td><td>0</td></tr>`;
+  table+=`</tbody></table></div><div class="scroll-hint">↕ เลื่อนดูทุกงวด (${totalMonths} งวด)</div>`;
 
   document.getElementById('result-title').textContent='🏠 ผลลัพธ์สินเชื่อบ้าน';
   document.getElementById('result-body').innerHTML=info+table;
@@ -709,7 +903,8 @@ function calcHome(){
   document.getElementById('main-layout').classList.add('calculated');
   syncPanelHeights();
   document.getElementById('result-panel').scrollIntoView({behavior:'smooth',block:'start'});
-  saveHistory({type:'home',price,downPct:actualPct,rate,years,results:[{m:months,monthly:Math.round(monthly),interest:Math.round(totalInterest),total:Math.round(totalPayment)}]});
+  const customerType=document.querySelector('input[name="home-customer"]:checked')?.value||'retail';
+  saveHistory({type:'home',price,downPct:actualPct,mrr,years,customerType,ratePeriods:JSON.parse(JSON.stringify(homeRatePeriods)),results:[{m:totalMonths,monthly:Math.round(schedule[0].payment),interest:Math.round(totalInterest),total:Math.round(totalPayment)}]});
 }
 
 // --- History ---
