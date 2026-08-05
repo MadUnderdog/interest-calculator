@@ -110,7 +110,7 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
 .history-item{background:var(--p5);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:.8rem;cursor:pointer;transition:.15s;border:2px solid transparent}
 .history-item:hover{border-color:var(--accent2);background:#fff3e0}
 .history-item .hi-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
-.history-item .hi-type{font-weight:600;color:var(--accent)}
+.history-item .hi-type{font-weight:600;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .history-item .hi-date{color:var(--muted);font-size:.75rem}
 .history-item .hi-details{color:var(--text);line-height:1.4}
 .history-item .hi-name{font-weight:600;color:var(--accent2);font-size:.78rem;margin-bottom:2px}
@@ -444,8 +444,8 @@ function renderHistory(){
   el.innerHTML=h.map((item,i)=>{
     const icon=item.type==='car'?'🚗':'🏠';
     const resText=item.results?item.results.map(r=>`${r.m||'?'}เดือน: ${fmt(r.monthly||0)}/เดือน`).join(' | '):'';
-    const nameText=item.name?`<div class="hi-name">${item.name}</div>`:'';
-    return `<div class="history-item" onclick="viewHistory(${i})"><div class="hi-head"><span class="hi-type">${icon} ${item.type==='car'?'รถยนต์':'บ้าน'}</span><span><span class="hi-date">${item.date}</span> <button class="hi-del" onclick="event.stopPropagation();deleteHistoryItem(${i})" title="ลบ">✕</button></span></div>${nameText}<div class="hi-details">${resText}</div></div>`;
+    const nameText=item.name?` — ${item.name}`:'';
+    return `<div class="history-item" onclick="viewHistory(${i})"><div class="hi-head"><span class="hi-type">${icon} ${item.type==='car'?'รถยนต์':'บ้าน'}${nameText}</span><span><span class="hi-date">${item.date}</span> <button class="hi-del" onclick="event.stopPropagation();deleteHistoryItem(${i})" title="ลบ">✕</button></span></div><div class="hi-details">${resText}</div></div>`;
   }).join('');
 }
 function viewHistory(idx){
