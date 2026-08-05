@@ -67,6 +67,7 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
 .rate-item label{font-size:.7rem;color:var(--accent2);font-weight:600;margin-bottom:1px;display:block}
 .rate-item input{width:100%;padding:5px 4px;border:2px solid #e0e0e0;border-radius:6px;font-size:.82rem;background:#fafafa;text-align:center}
 .rate-item input:focus{border-color:var(--accent);outline:none;background:#fff}
+.rate-preview{font-size:.68rem;color:var(--accent);font-weight:600;margin-top:3px;min-height:1.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* Radio group */
 .radio-group{display:flex;gap:0;border-radius:8px;overflow:hidden;border:2px solid #e0e0e0}
@@ -251,10 +252,10 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
         <div class="field">
           <label>ดอกเบี้ย (% ต่อปี) — แยกตามงวด</label>
           <div class="rate-grid">
-            <div class="rate-item"><label>48 ด.</label><input type="number" id="rate48" step="0.1" placeholder="3.5"></div>
-            <div class="rate-item"><label>60 ด.</label><input type="number" id="rate60" step="0.1" placeholder="3.8"></div>
-            <div class="rate-item"><label>72 ด.</label><input type="number" id="rate72" step="0.1" placeholder="4.0"></div>
-            <div class="rate-item"><label>84 ด.</label><input type="number" id="rate84" step="0.1" placeholder="4.2"></div>
+            <div class="rate-item"><label>48 ด.</label><input type="number" id="rate48" step="0.1" value="1.69" oninput="livePreview()"><div class="rate-preview" id="pv48"></div></div>
+            <div class="rate-item"><label>60 ด.</label><input type="number" id="rate60" step="0.1" value="2.19" oninput="livePreview()"><div class="rate-preview" id="pv60"></div></div>
+            <div class="rate-item"><label>72 ด.</label><input type="number" id="rate72" step="0.1" value="2.49" oninput="livePreview()"><div class="rate-preview" id="pv72"></div></div>
+            <div class="rate-item"><label>84 ด.</label><input type="number" id="rate84" step="0.1" value="3.49" oninput="livePreview()"><div class="rate-preview" id="pv84"></div></div>
           </div>
           <div style="font-size:.72rem;color:var(--muted);margin-top:3px">กรอกเฉพาะงวดที่ต้องการ</div>
         </div>
@@ -408,6 +409,49 @@ function syncPanelHeights(){
 }
 
 function getVal(id){return +(document.getElementById(id).value.replace(/[^0-9]/g,''))||0;}
+
+// --- Live preview: calculate monthly payment for each rate ---
+function livePreview(){
+  const price=getVal('car-price');
+  const discount=getVal('car-discount');
+  const discountDown=document.getElementById('car-discount-down').checked;
+  const downPct=parseFloat(document.getElementById('car-down-pct').value)||0;
+  const downAmt=getVal('car-down-amt');
+  const method=document.querySelector('input[name="car-method"]:checked').value;
+  if(!price){[48,60,72,84].forEach(m=>document.getElementById('pv'+m).textContent='');return}
+  let loan;
+  if(discountDown){
+    const rawDown=downAmt>0?downAmt:price*downPct/100;
+    const effectiveDown=Math.max(0,rawDown-discount);
+    loan=price-effectiveDown;
+  }else{
+    const ep=Math.max(0,price-discount);
+    const rawDown=downAmt>0?downAmt:ep*downPct/100;
+    loan=ep-rawDown;
+  }
+  if(loan<=0){[48,60,72,84].forEach(m=>document.getElementById('pv'+m).textContent='');return}
+  [48,60,72,84].forEach(m=>{
+    const rate=+document.getElementById('rate'+m).value;
+    const el=document.getElementById('pv'+m);
+    if(!rate||rate<=0){el.textContent='';return}
+    let monthly;
+    if(method==='flat'){
+      monthly=(loan+loan*rate/100*(m/12))/m;
+    }else{
+      const r=rate/100/12;
+      monthly=r>0?loan*r*Math.pow(1+r,m)/(Math.pow(1+r,m)-1):loan/m;
+    }
+    el.textContent=fmt(monthly)+'฿/ด.';
+  });
+}
+// Hook livePreview into all relevant inputs
+['car-price','car-discount','car-down-pct','car-down-amt'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.addEventListener('input',livePreview);
+});
+document.querySelectorAll('input[name="car-method"]').forEach(r=>r.addEventListener('change',livePreview));
+document.getElementById('car-discount-down').addEventListener('change',livePreview);
+livePreview();
 
 // --- Down payment sync ---
 function syncDown(type,source){
