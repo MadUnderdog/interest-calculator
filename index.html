@@ -52,8 +52,13 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
 /* Discount row */
 .discount-row{display:flex;gap:8px;align-items:flex-end}
 .discount-row .field{flex:1;margin-bottom:0}
-.discount-check{display:flex;align-items:center;gap:6px;padding-bottom:10px;font-size:.78rem;color:var(--muted);white-space:nowrap}
-.discount-check input{width:auto;accent-color:var(--accent)}
+.discount-check{display:flex;align-items:center;gap:6px;padding-bottom:10px;font-size:.78rem;color:var(--muted);white-space:nowrap;cursor:pointer}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .slider{position:absolute;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:24px;transition:.2s}
+.toggle .slider::before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
+.toggle input:checked+.slider{background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.toggle input:checked+.slider::before{transform:translateX(20px)}
 
 /* Rate grid */
 .rate-grid{display:flex;gap:6px}
@@ -222,7 +227,7 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
               <input type="text" id="car-discount" inputmode="numeric" placeholder="0" oninput="syncDiscount()">
               <span class="down-suffix">฿</span>
             </div>
-            <label class="discount-check"><input type="checkbox" id="car-discount-down" checked> หักจากเงินดาวน์</label>
+            <label class="discount-check" onclick="this.querySelector('input').click()"><span class="toggle"><input type="checkbox" id="car-discount-down"><span class="slider"></span></span> หักจากเงินดาวน์</label>
           </div>
         </div>
         <div class="field">
