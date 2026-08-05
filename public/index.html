@@ -65,9 +65,10 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
 .rate-grid{display:flex;gap:6px}
 .rate-item{flex:1;background:var(--p3);border-radius:8px;padding:6px 5px;text-align:center}
 .rate-item label{font-size:.7rem;color:var(--accent2);font-weight:600;margin-bottom:1px;display:block}
-.rate-item input{width:100%;padding:5px 4px;border:2px solid #e0e0e0;border-radius:6px;font-size:.82rem;background:#fafafa;text-align:center}
-.rate-item input:focus{border-color:var(--accent);outline:none;background:#fff}
-.rate-preview{font-size:.68rem;color:var(--accent);font-weight:600;margin-top:3px;min-height:1.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rate-item input[type="number"]{width:100%;padding:5px 4px;border:2px solid #e0e0e0;border-radius:6px;font-size:.82rem;background:#fafafa;text-align:center}
+.rate-item input[type="number"]:focus{border-color:var(--accent);outline:none;background:#fff}
+.rate-monthly{width:100%;padding:4px;border:1.5px dashed #c5cae9;border-radius:5px;font-size:.72rem;background:#fff;text-align:center;color:var(--accent);font-weight:600;margin-top:4px}
+.rate-monthly:focus{border-color:var(--accent);outline:none;background:#f3e5f5}
 
 /* Radio group */
 .radio-group{display:flex;gap:0;border-radius:8px;overflow:hidden;border:2px solid #e0e0e0}
@@ -252,10 +253,10 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
         <div class="field">
           <label>ดอกเบี้ย (% ต่อปี) — แยกตามงวด</label>
           <div class="rate-grid">
-            <div class="rate-item"><label>48 ด.</label><input type="number" id="rate48" step="0.1" value="1.69" oninput="livePreview()"><div class="rate-preview" id="pv48"></div></div>
-            <div class="rate-item"><label>60 ด.</label><input type="number" id="rate60" step="0.1" value="2.19" oninput="livePreview()"><div class="rate-preview" id="pv60"></div></div>
-            <div class="rate-item"><label>72 ด.</label><input type="number" id="rate72" step="0.1" value="2.49" oninput="livePreview()"><div class="rate-preview" id="pv72"></div></div>
-            <div class="rate-item"><label>84 ด.</label><input type="number" id="rate84" step="0.1" value="3.49" oninput="livePreview()"><div class="rate-preview" id="pv84"></div></div>
+            <div class="rate-item"><label>48 ด.</label><input type="number" id="rate48" step="0.1" value="1.69" oninput="rateChanged(48)"><input type="text" class="rate-monthly" id="pv48" inputmode="numeric" oninput="monthlyChanged(48)" placeholder="฿/ด."></div>
+            <div class="rate-item"><label>60 ด.</label><input type="number" id="rate60" step="0.1" value="2.19" oninput="rateChanged(60)"><input type="text" class="rate-monthly" id="pv60" inputmode="numeric" oninput="monthlyChanged(60)" placeholder="฿/ด."></div>
+            <div class="rate-item"><label>72 ด.</label><input type="number" id="rate72" step="0.1" value="2.49" oninput="rateChanged(72)"><input type="text" class="rate-monthly" id="pv72" inputmode="numeric" oninput="monthlyChanged(72)" placeholder="฿/ด."></div>
+            <div class="rate-item"><label>84 ด.</label><input type="number" id="rate84" step="0.1" value="3.49" oninput="rateChanged(84)"><input type="text" class="rate-monthly" id="pv84" inputmode="numeric" oninput="monthlyChanged(84)" placeholder="฿/ด."></div>
           </div>
           <div style="font-size:.72rem;color:var(--muted);margin-top:3px">กรอกเฉพาะงวดที่ต้องการ</div>
         </div>
@@ -410,15 +411,16 @@ function syncPanelHeights(){
 
 function getVal(id){return +(document.getElementById(id).value.replace(/[^0-9]/g,''))||0;}
 
-// --- Live preview: calculate monthly payment for each rate ---
-function livePreview(){
+// --- Two-way sync: % ↔ monthly payment ---
+let _syncing=false; // prevent loops
+
+function getLoan(){
   const price=getVal('car-price');
   const discount=getVal('car-discount');
   const discountDown=document.getElementById('car-discount-down').checked;
   const downPct=parseFloat(document.getElementById('car-down-pct').value)||0;
   const downAmt=getVal('car-down-amt');
-  const method=document.querySelector('input[name="car-method"]:checked').value;
-  if(!price){[48,60,72,84].forEach(m=>document.getElementById('pv'+m).textContent='');return}
+  if(!price)return 0;
   let loan;
   if(discountDown){
     const rawDown=downAmt>0?downAmt:price*downPct/100;
@@ -429,22 +431,79 @@ function livePreview(){
     const rawDown=downAmt>0?downAmt:ep*downPct/100;
     loan=ep-rawDown;
   }
-  if(loan<=0){[48,60,72,84].forEach(m=>document.getElementById('pv'+m).textContent='');return}
+  return Math.max(0,loan);
+}
+
+function calcMonthly(loan,ratePct,months,method){
+  if(!loan||!ratePct||ratePct<=0)return 0;
+  if(method==='flat'){
+    return (loan+loan*ratePct/100*(months/12))/months;
+  }else{
+    const r=ratePct/100/12;
+    return r>0?loan*r*Math.pow(1+r,months)/(Math.pow(1+r,months)-1):loan/months;
+  }
+}
+
+// Solve rate from monthly payment (binary search)
+function solveRate(loan,monthly,months,method){
+  if(!loan||monthly<=0)return 0;
+  if(method==='flat'){
+    const totalInterest=monthly*months-loan;
+    const rate=totalInterest/(loan*(months/12))*100;
+    return Math.max(0,rate);
+  }
+  // Effective: binary search on rate%
+  let lo=0.001,hi=100;
+  for(let i=0;i<50;i++){
+    const mid=(lo+hi)/2;
+    const m=calcMonthly(loan,mid,months,'effective');
+    if(m<monthly)lo=mid;else hi=mid;
+  }
+  return (lo+hi)/2;
+}
+
+function rateChanged(months){
+  if(_syncing)return;
+  _syncing=true;
+  const loan=getLoan();
+  const method=document.querySelector('input[name="car-method"]:checked').value;
+  const rate=+document.getElementById('rate'+months).value;
+  const el=document.getElementById('pv'+months);
+  if(loan<=0||!rate||rate<=0){el.value='';_syncing=false;return}
+  const monthly=calcMonthly(loan,rate,months,method);
+  el.value=fmt(Math.round(monthly));
+  _syncing=false;
+}
+
+function monthlyChanged(months){
+  if(_syncing)return;
+  _syncing=true;
+  const loan=getLoan();
+  const method=document.querySelector('input[name="car-method"]:checked').value;
+  const monthlyVal=+(document.getElementById('pv'+months).value.replace(/[^0-9]/g,''));
+  const rateEl=document.getElementById('rate'+months);
+  if(loan<=0||monthlyVal<=0){rateEl.value='';_syncing=false;return}
+  const rate=solveRate(loan,monthlyVal,months,method);
+  rateEl.value=rate>0?Math.round(rate*100)/100:'';
+  _syncing=false;
+}
+
+function livePreview(){
+  if(_syncing)return;
+  _syncing=true;
+  const loan=getLoan();
+  const method=document.querySelector('input[name="car-method"]:checked').value;
   [48,60,72,84].forEach(m=>{
     const rate=+document.getElementById('rate'+m).value;
     const el=document.getElementById('pv'+m);
-    if(!rate||rate<=0){el.textContent='';return}
-    let monthly;
-    if(method==='flat'){
-      monthly=(loan+loan*rate/100*(m/12))/m;
-    }else{
-      const r=rate/100/12;
-      monthly=r>0?loan*r*Math.pow(1+r,m)/(Math.pow(1+r,m)-1):loan/m;
-    }
-    el.textContent=fmt(monthly)+'฿/ด.';
+    if(loan<=0||!rate||rate<=0){el.value='';return}
+    const monthly=calcMonthly(loan,rate,m,method);
+    el.value=fmt(Math.round(monthly));
   });
+  _syncing=false;
 }
-// Hook livePreview into all relevant inputs
+
+// Hook: price/discount/down changes → recalc all previews
 ['car-price','car-discount','car-down-pct','car-down-amt'].forEach(id=>{
   const el=document.getElementById(id);
   if(el)el.addEventListener('input',livePreview);
