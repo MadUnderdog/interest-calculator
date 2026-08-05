@@ -40,26 +40,21 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
 .field input,.field select{width:100%;padding:9px 10px;border:2px solid #e0e0e0;border-radius:8px;font-size:.95rem;transition:.2s;background:#fafafa}
 .field input:focus,.field select:focus{border-color:var(--accent);outline:none;background:#fff}
 
-/* Down payment group */
-.down-group{display:flex;gap:6px;align-items:stretch}
-.down-group .field{flex:1;margin-bottom:0}
-.down-group .field input{padding-right:28px}
-.down-toggle{display:flex;flex-direction:column;border-radius:8px;overflow:hidden;border:2px solid #e0e0e0;flex-shrink:0}
-.down-toggle label{padding:4px 10px;cursor:pointer;font-size:.75rem;font-weight:600;background:#fafafa;color:var(--muted);transition:.2s;text-align:center;display:flex;align-items:center;justify-content:center}
-.down-toggle label:first-child{border-bottom:1px solid #e0e0e0}
-.down-toggle input{display:none}
-.down-toggle label:has(input:checked){background:linear-gradient(135deg,var(--p4),var(--p3));color:var(--accent2);font-weight:700}
-.down-toggle label:hover{background:var(--p3)}
-.suffix{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:.8rem;color:var(--muted);pointer-events:none;font-weight:600}
-.down-group .field{position:relative}
+/* Down payment - dual inputs */
+.down-dual{display:flex;gap:8px}
+.down-dual .field{margin-bottom:0;flex:1}
+.down-dual .field label{font-size:.72rem}
+.down-input{position:relative}
+.down-input input{padding-right:24px}
+.down-suffix{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:.8rem;color:var(--muted);pointer-events:none;font-weight:600}
+.down-arrow{display:flex;align-items:flex-end;padding-bottom:10px;font-size:1.2rem;color:var(--accent);flex-shrink:0}
 
-/* Rate grid */
-.rate-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.rate-item{background:var(--p3);border-radius:8px;padding:8px 10px}
-.rate-item label{font-size:.75rem;color:var(--accent2);font-weight:600;margin-bottom:2px;display:block}
-.rate-item input{width:100%;padding:7px 8px;border:2px solid #e0e0e0;border-radius:6px;font-size:.9rem;background:#fafafa}
+/* Rate grid — single row, compact */
+.rate-grid{display:flex;gap:6px}
+.rate-item{flex:1;background:var(--p3);border-radius:8px;padding:6px 5px;text-align:center}
+.rate-item label{font-size:.7rem;color:var(--accent2);font-weight:600;margin-bottom:1px;display:block}
+.rate-item input{width:100%;padding:5px 4px;border:2px solid #e0e0e0;border-radius:6px;font-size:.82rem;background:#fafafa;text-align:center}
 .rate-item input:focus{border-color:var(--accent);outline:none;background:#fff}
-@media(max-width:360px){.rate-grid{grid-template-columns:1fr}}
 
 /* Radio group */
 .radio-group{display:flex;gap:0;border-radius:8px;overflow:hidden;border:2px solid #e0e0e0}
@@ -79,11 +74,12 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
 /* Result Panel */
 .result-panel{display:none}
 .result-panel.show{display:block}
-.result-card{background:var(--card);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
+.result-card{background:var(--card);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);overflow-x:auto}
 .result-card h3{font-size:.95rem;color:var(--accent);margin-bottom:10px;text-align:center}
 
 /* Result Table */
-.result-table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:8px}
+.result-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:8px 0}
+.result-table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:520px}
 .result-table th{background:linear-gradient(135deg,var(--p4),var(--p3));padding:7px 8px;text-align:center;font-weight:600;color:var(--accent2);border-bottom:2px solid var(--accent2);white-space:nowrap}
 .result-table td{padding:6px 8px;text-align:right;border-bottom:1px solid #e8e8e8}
 .result-table td:first-child{text-align:left;font-weight:500}
@@ -95,7 +91,7 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
 .info{font-size:.8rem;color:var(--muted);line-height:1.6;margin-bottom:8px;text-align:center}
 
 /* Amortization */
-.amort-wrap{overflow-y:auto;border-radius:8px;border:1px solid #e0e0e0}
+.amort-wrap{overflow:auto;border-radius:8px;border:1px solid #e0e0e0;-webkit-overflow-scrolling:touch}
 .amort-table{width:100%;border-collapse:collapse;font-size:.78rem}
 .amort-table th{background:linear-gradient(135deg,var(--p4),var(--p3));padding:6px 7px;text-align:center;font-weight:600;color:var(--accent2);border-bottom:2px solid var(--accent2);position:sticky;top:0;z-index:1}
 .amort-table td{padding:5px 7px;text-align:right;border-bottom:1px solid #eee}
@@ -145,26 +141,27 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
         </div>
         <div class="field">
           <label>เงินดาวน์</label>
-          <div class="down-group">
-            <div class="field">
-              <input type="number" id="car-down" value="15" min="0">
-              <span class="suffix" id="car-down-suffix">%</span>
+          <div class="down-dual">
+            <div class="field down-input">
+              <input type="number" id="car-down-pct" value="15" min="0" max="100" oninput="syncDown('car','pct')">
+              <span class="down-suffix">%</span>
             </div>
-            <div class="down-toggle">
-              <label><input type="radio" name="car-down-type" value="pct" checked onchange="toggleDown('car')"><span>%</span></label>
-              <label><input type="radio" name="car-down-type" value="amt" onchange="toggleDown('car')"><span>฿</span></label>
+            <div class="down-arrow">⇄</div>
+            <div class="field down-input">
+              <input type="text" id="car-down-amt" inputmode="numeric" oninput="syncDown('car','amt')">
+              <span class="down-suffix">฿</span>
             </div>
           </div>
         </div>
         <div class="field">
-          <label>อัตราดอกเบี้ย (% ต่อปี) — แยกตามงวด</label>
+          <label>ดอกเบี้ย (% ต่อปี) — แยกตามงวด</label>
           <div class="rate-grid">
-            <div class="rate-item"><label>48 เดือน</label><input type="number" id="rate48" step="0.1" placeholder="เช่น 3.5"></div>
-            <div class="rate-item"><label>60 เดือน</label><input type="number" id="rate60" step="0.1" placeholder="เช่น 3.8"></div>
-            <div class="rate-item"><label>72 เดือน</label><input type="number" id="rate72" step="0.1" placeholder="เช่น 4.0"></div>
-            <div class="rate-item"><label>84 เดือน</label><input type="number" id="rate84" step="0.1" placeholder="เช่น 4.2"></div>
+            <div class="rate-item"><label>48 ด.</label><input type="number" id="rate48" step="0.1" placeholder="3.5"></div>
+            <div class="rate-item"><label>60 ด.</label><input type="number" id="rate60" step="0.1" placeholder="3.8"></div>
+            <div class="rate-item"><label>72 ด.</label><input type="number" id="rate72" step="0.1" placeholder="4.0"></div>
+            <div class="rate-item"><label>84 ด.</label><input type="number" id="rate84" step="0.1" placeholder="4.2"></div>
           </div>
-          <div style="font-size:.75rem;color:var(--muted);margin-top:4px">กรอกเฉพาะงวดที่ต้องการคำนวณ</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:3px">กรอกเฉพาะงวดที่ต้องการ</div>
         </div>
         <div class="field">
           <label>วิธีคิด</label>
@@ -184,14 +181,15 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
         </div>
         <div class="field">
           <label>เงินดาวน์</label>
-          <div class="down-group">
-            <div class="field">
-              <input type="number" id="home-down" value="20" min="0">
-              <span class="suffix" id="home-down-suffix">%</span>
+          <div class="down-dual">
+            <div class="field down-input">
+              <input type="number" id="home-down-pct" value="20" min="0" max="100" oninput="syncDown('home','pct')">
+              <span class="down-suffix">%</span>
             </div>
-            <div class="down-toggle">
-              <label><input type="radio" name="home-down-type" value="pct" checked onchange="toggleDown('home')"><span>%</span></label>
-              <label><input type="radio" name="home-down-type" value="amt" onchange="toggleDown('home')"><span>฿</span></label>
+            <div class="down-arrow">⇄</div>
+            <div class="field down-input">
+              <input type="text" id="home-down-amt" inputmode="numeric" oninput="syncDown('home','amt')">
+              <span class="down-suffix">฿</span>
             </div>
           </div>
         </div>
@@ -248,6 +246,8 @@ function setupCommaInput(id){
 }
 setupCommaInput('car-price');
 setupCommaInput('home-price');
+setupCommaInput('car-down-amt');
+setupCommaInput('home-down-amt');
 
 function syncPanelHeights(){
   if(window.innerWidth>=768){
@@ -262,13 +262,24 @@ function syncPanelHeights(){
 // Helper: get raw number from comma input
 function getVal(id){return +(document.getElementById(id).value.replace(/[^0-9]/g,''))||0;}
 
-// --- Down payment toggle ---
-function toggleDown(type){
-  const mode=document.querySelector(`input[name="${type}-down-type"]:checked`).value;
-  const suffix=document.getElementById(`${type}-down-suffix`);
-  const input=document.getElementById(`${type}-down`);
-  suffix.textContent=mode==='pct'?'%':'฿';
-  input.placeholder=mode==='pct'?'เช่น 15':'เช่น 150,000';
+// --- Down payment sync (dual inputs) ---
+function syncDown(type,source){
+  const price=getVal(type==='car'?'car-price':'home-price');
+  const pctEl=document.getElementById(type+'-down-pct');
+  const amtEl=document.getElementById(type+'-down-amt');
+  if(source==='pct'){
+    const pct=parseFloat(pctEl.value)||0;
+    if(price>0){
+      const amt=price*pct/100;
+      amtEl.value=fmt(amt);
+    }
+  }else{
+    const amt=getVal(type+'-down-amt');
+    if(price>0){
+      const pct=Math.round(amt/price*10000)/100;
+      pctEl.value=pct;
+    }
+  }
 }
 
 // --- Tab ---
@@ -287,21 +298,16 @@ function switchTab(tab){
 function calcCar(){
   const name=document.getElementById('car-name').value.trim();
   const price=getVal('car-price');
-  const downMode=document.querySelector('input[name="car-down-type"]:checked').value;
-  const downRaw=+document.getElementById('car-down').value;
+  const downPct=parseFloat(document.getElementById('car-down-pct').value)||0;
+  const downAmt=getVal('car-down-amt');
   const method=document.querySelector('input[name="car-method"]:checked').value;
   if(!price){alert('กรุณากรอกราคารถ');return}
 
-  let loan,downAmt,downPct;
-  if(downMode==='pct'){
-    downPct=downRaw;
-    downAmt=price*downPct/100;
-    loan=price-downAmt;
-  }else{
-    downAmt=downRaw;
-    downPct=price>0?Math.round(downAmt/price*10000)/100:0;
-    loan=price-downAmt;
-  }
+  let loan;
+  const downAmtCalc=price*downPct/100;
+  const actualDown=downAmt>0?downAmt:downAmtCalc;
+  const actualPct=downAmt>0?(price>0?Math.round(downAmt/price*10000)/100:0):downPct;
+  loan=price-actualDown;
 
   const durations=[48,60,72,84];
   let results=[];
@@ -332,13 +338,13 @@ function calcCar(){
 
   results.sort((a,b)=>a.totalInterest-b.totalInterest);
   const methodLabel=method==='flat'?'Flat Rate':'Effective Rate (ลดต้นลดดอก)';
-  const downLabel=downMode==='pct'?`ดาวน์ ${downPct}%`:`ดาวน์ ${fmt(downAmt)} บาท (${downPct}%)`;
+  const downLabel=`ดาวน์ ${actualPct}% = ${fmt(actualDown)} บาท`;
   let info=`<div class="info">`
     +(name?`<b>${name}</b><br>`:'')
-    +`ราคารถ <b>${fmt(price)}</b> บาท | ${downLabel} = <b>${fmt(downAmt)}</b> บาท<br>`
+    +`ราคารถ <b>${fmt(price)}</b> บาท | ${downLabel}<br>`
     +`วงเงินกู้ <b>${fmt(loan)}</b> บาท | ${methodLabel}</div>`;
 
-  let table=`<table class="result-table"><thead><tr>`
+  let table=`<div class="result-wrap"><table class="result-table"><thead><tr>`
     +`<th>งวด</th><th>ดอกเบี้ย</th><th>ค่างวด/เดือน</th><th>ดอกเบี้ยรวม</th><th>จ่ายทั้งหมด</th>`
     +`</tr></thead><tbody>`;
   results.forEach((r,i)=>{
@@ -353,7 +359,7 @@ function calcCar(){
     table+=`<tr><td colspan="3" style="text-align:center;color:var(--muted)">ผลต่างดอกเบี้ยสูงสุด-ต่ำสุด</td>`
       +`<td colspan="2" style="color:#ef5350;font-weight:700">${fmt(maxInt-minInt)} บาท</td></tr>`;
   }
-  table+=`</tbody></table>`;
+  table+=`</tbody></table></div>`;
 
   document.getElementById('result-title').textContent='🚗 ผลลัพธ์สินเชื่อรถยนต์';
   document.getElementById('result-body').innerHTML=info+table;
@@ -361,29 +367,24 @@ function calcCar(){
   document.getElementById('main-layout').classList.add('calculated');
   syncPanelHeights();
   if(window.innerWidth<768)document.getElementById('result-panel').scrollIntoView({behavior:'smooth'});
-  saveHistory({type:'car',name:name||null,price,downPct,downMode,method,results:results.map(r=>({m:r.months,rate:r.rate,monthly:Math.round(r.monthly),interest:Math.round(r.totalInterest),total:Math.round(r.totalPayment)}))});
+  saveHistory({type:'car',name:name||null,price,downPct:actualPct,method,results:results.map(r=>({m:r.months,rate:r.rate,monthly:Math.round(r.monthly),interest:Math.round(r.totalInterest),total:Math.round(r.totalPayment)}))});
 }
 
 // --- Home calc ---
 function calcHome(){
   const price=getVal('home-price');
-  const downMode=document.querySelector('input[name="home-down-type"]:checked').value;
-  const downRaw=+document.getElementById('home-down').value;
+  const downPct=parseFloat(document.getElementById('home-down-pct').value)||0;
+  const downAmt=getVal('home-down-amt');
   const years=+document.getElementById('home-term').value;
   const rate=+document.getElementById('home-rate').value;
   if(!price){alert('กรุณากรอกราคาบ้าน');return}
   if(!rate){alert('กรุณากรอกอัตราดอกเบี้ย');return}
 
-  let loan,downAmt,downPct;
-  if(downMode==='pct'){
-    downPct=downRaw;
-    downAmt=price*downPct/100;
-    loan=price-downAmt;
-  }else{
-    downAmt=downRaw;
-    downPct=price>0?Math.round(downAmt/price*10000)/100:0;
-    loan=price-downAmt;
-  }
+  let loan;
+  const downAmtCalc=price*downPct/100;
+  const actualDown=downAmt>0?downAmt:downAmtCalc;
+  const actualPct=downAmt>0?(price>0?Math.round(downAmt/price*10000)/100:0):downPct;
+  loan=price-actualDown;
 
   const months=years*12;
   const r=rate/100/12;
@@ -399,9 +400,9 @@ function calcHome(){
   }
   const totalPayment=monthly*months;
 
-  const downLabel=downMode==='pct'?`ดาวน์ ${downPct}%`:`ดาวน์ ${fmt(downAmt)} บาท (${downPct}%)`;
+  const downLabel=`ดาวน์ ${actualPct}% = ${fmt(actualDown)} บาท`;
   let info=`<div class="info">`
-    +`ราคาบ้าน <b>${fmt(price)}</b> บาท | ${downLabel} = <b>${fmt(downAmt)}</b> บาท<br>`
+    +`ราคาบ้าน <b>${fmt(price)}</b> บาท | ${downLabel}<br>`
     +`วงเงินกู้ <b>${fmt(loan)}</b> บาท | ดอกเบี้ย ${rate}% | ${years} ปี (${months} งวด)<br>`
     +`ค่างวด/เดือน <b>${fmt(monthly)}</b> บาท</div>`;
 
@@ -420,7 +421,7 @@ function calcHome(){
   document.getElementById('main-layout').classList.add('calculated');
   syncPanelHeights();
   if(window.innerWidth<768)document.getElementById('result-panel').scrollIntoView({behavior:'smooth'});
-  saveHistory({type:'home',price,downPct,downMode,rate,years,results:[{m:months,monthly:Math.round(monthly),interest:Math.round(totalInterest),total:Math.round(totalPayment)}]});
+  saveHistory({type:'home',price,downPct:actualPct,rate,years,results:[{m:months,monthly:Math.round(monthly),interest:Math.round(totalInterest),total:Math.round(totalPayment)}]});
 }
 
 // --- History ---
