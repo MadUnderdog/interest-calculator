@@ -171,11 +171,18 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
 .compare-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:.82rem}
 .compare-item input{width:auto;accent-color:var(--accent)}
 .compare-result{background:var(--card);border-radius:var(--r);padding:14px;box-shadow:var(--shadow)}
-.compare-table{width:100%;border-collapse:collapse;font-size:.78rem;min-width:400px}
-.compare-table th{background:#f5f5f5;padding:6px;text-align:center;font-weight:600;color:var(--text);border-bottom:2px solid #e0e0e0;white-space:nowrap;font-size:.72rem}
-.compare-table td{padding:5px 6px;text-align:center;border-bottom:1px solid #eee;font-size:.78rem}
+.compare-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.compare-header h3{font-size:.95rem;color:var(--accent);margin:0}
+.compare-section{margin-bottom:12px;border:1px solid #e8e8e8;border-radius:8px;overflow:hidden}
+.cs-title{font-size:.82rem;font-weight:700;padding:6px 10px;color:#fff}
+.cs-info .cs-title{background:linear-gradient(135deg,#5c6bc0,#3f51b5)}
+.cs-monthly .cs-title{background:linear-gradient(135deg,#42a5f5,#1e88e5)}
+.cs-score .cs-title{background:linear-gradient(135deg,#ab47bc,#7b1fa2)}
+.compare-table{width:100%;border-collapse:collapse;font-size:.78rem;min-width:auto}
+.compare-table th{background:#f8f8f8;padding:6px;text-align:center;font-weight:600;color:var(--text);border-bottom:1px solid #e0e0e0;white-space:nowrap;font-size:.72rem}
+.compare-table td{padding:5px 6px;text-align:center;border-bottom:1px solid #f0f0f0;font-size:.78rem}
 .compare-table td:first-child{text-align:left;font-weight:500;background:#fafafa;white-space:nowrap}
-.compare-table .best-cell{background:rgba(76,175,80,.08)!important;color:#2e7d32;font-weight:600}
+.compare-table .best-cell{background:rgba(76,175,80,.1)!important;color:#2e7d32;font-weight:700}
 .compare-table .verdict{font-size:.82rem;font-weight:700;color:var(--text);text-align:center;padding:10px;background:#f5f5f5;border:1px solid #e0e0e0;border-radius:8px;margin-top:10px}
 
 /* Proposal */
@@ -210,6 +217,11 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
   .tabs,.form-panel,.history,.result-panel,.proposal-actions,.btn-back,.btn-print{display:none!important}
   .proposal{display:block!important;box-shadow:none;padding:12px}
   .proposal .no-print{display:none!important}
+  .compare-page{display:block!important}
+  .compare-select{display:none!important}
+  .compare-result{box-shadow:none;padding:0}
+  .compare-section{break-inside:avoid}
+  .cs-title{color:#333!important;background:#e0e0e0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 @media(max-width:360px){.container{padding:8px}.card{padding:10px}.tab-btn{padding:8px 16px;font-size:.82rem}}
 </style>
@@ -268,10 +280,10 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
         <div class="field">
           <label>ดอกเบี้ย (% ต่อปี) — แยกตามงวด</label>
           <div class="rate-grid">
-            <div class="rate-item"><label>48 ด.</label><input type="number" id="rate48" step="0.1" value="1.69" oninput="rateChanged(48)"><input type="text" class="rate-monthly" id="pv48" inputmode="numeric" placeholder="฿/ด."></div>
-            <div class="rate-item"><label>60 ด.</label><input type="number" id="rate60" step="0.1" value="2.19" oninput="rateChanged(60)"><input type="text" class="rate-monthly" id="pv60" inputmode="numeric" placeholder="฿/ด."></div>
-            <div class="rate-item"><label>72 ด.</label><input type="number" id="rate72" step="0.1" value="2.49" oninput="rateChanged(72)"><input type="text" class="rate-monthly" id="pv72" inputmode="numeric" placeholder="฿/ด."></div>
-            <div class="rate-item"><label>84 ด.</label><input type="number" id="rate84" step="0.1" value="3.49" oninput="rateChanged(84)"><input type="text" class="rate-monthly" id="pv84" inputmode="numeric" placeholder="฿/ด."></div>
+            <div class="rate-item"><label>48 ด.</label><input type="number" id="rate48" step="0.1" placeholder="%" oninput="rateChanged(48)"><input type="text" class="rate-monthly" id="pv48" inputmode="numeric" placeholder="฿/ด."></div>
+            <div class="rate-item"><label>60 ด.</label><input type="number" id="rate60" step="0.1" placeholder="%" oninput="rateChanged(60)"><input type="text" class="rate-monthly" id="pv60" inputmode="numeric" placeholder="฿/ด."></div>
+            <div class="rate-item"><label>72 ด.</label><input type="number" id="rate72" step="0.1" placeholder="%" oninput="rateChanged(72)"><input type="text" class="rate-monthly" id="pv72" inputmode="numeric" placeholder="฿/ด."></div>
+            <div class="rate-item"><label>84 ด.</label><input type="number" id="rate84" step="0.1" placeholder="%" oninput="rateChanged(84)"><input type="text" class="rate-monthly" id="pv84" inputmode="numeric" placeholder="฿/ด."></div>
           </div>
           <div style="font-size:.72rem;color:var(--muted);margin-top:3px">กรอกเฉพาะงวดที่ต้องการ</div>
         </div>
@@ -993,68 +1005,97 @@ function runCompare(){
     if(item&&item.type==='car')selected.push(item);
   });
   if(selected.length<2){alert('เลือกรายการอย่างน้อย 2 รายการ');return}
-  // Build comparison
-  const dims=[
-    {key:'price',label:'ราคารถ',fmt:v=>fmt(v)+' บาท'},
-    {key:'discount',label:'ส่วนลด',fmt:v=>v?fmt(v)+' บาท':'-'},
-    {key:'effectivePrice',label:'ราคาสุทธิ',fmt:v=>fmt(v)+' บาท'},
-    {key:'downPct',label:'ดาวน์ %',fmt:v=>v+'%'},
-    {key:'effectiveDown',label:'เงินดาวน์',fmt:v=>fmt(v)+' บาท'},
-    {key:'loan',label:'วงเงินกู้',fmt:v=>fmt(v)+' บาท'},
-  ];
-  // Add per-duration metrics
+
   const allMonths=[...new Set(selected.flatMap(s=>s.results.map(r=>r.m)))].sort((a,b)=>a-b);
-  allMonths.forEach(m=>{
-    dims.push({key:'monthly_'+m,label:`ค่างวด ${m} เดือน`,fmt:v=>v?fmt(v)+' บาท':'-',extract:s=>{const r=s.results.find(x=>x.m===m);return r?r.monthly:null}});
-    dims.push({key:'interest_'+m,label:`ดอกเบี้ยรวม ${m} เดือน`,fmt:v=>v?fmt(v)+' บาท':'-',extract:s=>{const r=s.results.find(x=>x.m===m);return r?r.interest:null}});
-    dims.push({key:'total_'+m,label:`จ่ายทั้งหมด ${j=m} เดือน`,fmt:v=>v?fmt(v)+' บาท':'-',extract:s=>{const r=s.results.find(x=>x.m===m);return r?r.total:null}});
-    dims.push({key:'effRate_'+m,label:`อัตราดอกเบี้ยจริง ${m} ด.`,fmt:v=>v!==null?v.toFixed(2)+'%':'-',extract:s=>{const r=s.results.find(x=>x.m===m);return r&&s.loan?r.interest/s.loan/(m/12)*100:null}});
-    dims.push({key:'costMonth_'+m,label:`ต้นทุน/เดือน ${m} ด.`,fmt:v=>v?fmt(v)+' บาท':'-',extract:s=>{const r=s.results.find(x=>x.m===m);return r?r.total/m:null}});
-    dims.push({key:'intRatio_'+m,label:`สัดส่วนดอกเบี้ย ${m} ด.`,fmt:v=>v!==null?v.toFixed(1)+'%':'-',extract:s=>{const r=s.results.find(x=>x.m===m);return r&&s.loan?r.interest/s.loan*100:null}});
-  });
-  // Composite score (lower = better)
-  dims.push({key:'score',label:'⭐ คะแนนรวม',fmt:v=>v.toFixed(1),extract:s=>{
-    if(!s.results.length)return 999;
-    const best=s.results[0];
-    const effRate=s.loan?best.interest/s.loan/(best.m/12)*100:99;
-    const intRatio=s.loan?best.interest/s.loan*100:99;
-    return effRate*0.5+intRatio*0.3+(best.m/12)*0.2;
-  }});
 
-  let html=`<h3 style="text-align:center;color:var(--accent);margin-bottom:10px">📊 ผลเปรียบเทียบ (${selected.length} คัน)</h3>`;
-  html+=`<div class="result-wrap"><table class="compare-table"><thead><tr><th>มิติ</th>`;
-  selected.forEach(s=>{
-    const n=s.name||fmt(s.price)+'฿';
-    html+=`<th>${n.length>15?n.slice(0,15)+'…':n}</th>`;
-  });
+  // Helper: find best value in array
+  function bestOf(vals,lower){
+    const nums=vals.filter(v=>v!==null&&v!==undefined&&!isNaN(v));
+    if(!nums.length)return null;
+    return lower?Math.min(...nums):Math.max(...nums);
+  }
+  function cell(v,best,fmt){
+    const cls=(best!==null&&v===best)?' class="best-cell"':'';
+    return `<td${cls}>${fmt(v)}</td>`;
+  }
+
+  let html=`<div class="compare-header">`;
+  html+=`<h3>📊 ผลเปรียบเทียบ (${selected.length} คัน)</h3>`;
+  html+=`<button class="btn btn-secondary" onclick="window.print()" style="width:auto;display:inline-block;font-size:.8rem;padding:6px 14px">🖨️ พิมพ์</button>`;
+  html+=`</div>`;
+
+  // === Section 1: ข้อมูลรถ ===
+  html+=`<div class="compare-section cs-info">`;
+  html+=`<div class="cs-title">🚗 ข้อมูลรถ</div>`;
+  html+=`<div class="result-wrap"><table class="compare-table"><thead><tr><th></th>`;
+  selected.forEach(s=>{html+=`<th>${(s.name||fmt(s.price)+'฿').substring(0,15)}</th>`});
   html+=`</tr></thead><tbody>`;
-
-  dims.forEach(d=>{
+  const infoDims=[
+    {label:'ราคารถ',fmt:v=>fmt(v)+'฿',get:s=>s.price},
+    {label:'ส่วนลด',fmt:v=>v?fmt(v)+'฿':'-',get:s=>s.discount||0},
+    {label:'เงินดาวน์',fmt:v=>fmt(v)+'฿',get:s=>s.effectiveDown||0},
+    {label:'วงเงินกู้',fmt:v=>fmt(v)+'฿',get:s=>s.loan||0},
+  ];
+  infoDims.forEach(d=>{
+    const vals=selected.map(d.get);
+    const b=bestOf(vals,false);
     html+=`<tr><td>${d.label}</td>`;
-    const vals=selected.map(s=>{
-      if(d.extract)return d.extract(s);
-      return s[d.key]||0;
-    });
-    const numVals=vals.filter(v=>v!==null&&v!==undefined&&!isNaN(v));
-    const isLowerBetter=['score','effRate_','intRatio_'].some(k=>d.key.startsWith(k))||d.key==='monthly_'||d.key==='total_'||d.key==='interest_'||d.key==='costMonth_';
-    const bestVal=numVals.length?isLowerBetter?Math.min(...numVals):Math.max(...numVals):null;
-    selected.forEach((s,i)=>{
-      const v=vals[i];
-      const cellClass=v===bestVal&&numVals.length>1?' class="best-cell"':'';
-      html+=`<td${cellClass}>${d.fmt(v)}</td>`;
-    });
+    selected.forEach((s,i)=>{html+=cell(vals[i],b,d.fmt)});
     html+=`</tr>`;
   });
-  html+=`</tbody></table></div>`;
+  html+=`</tbody></table></div></div>`;
 
-  // Verdict
+  // === Section 2: ค่างวดแต่ละงวด ===
+  allMonths.forEach(m=>{
+    html+=`<div class="compare-section cs-monthly">`;
+    html+=`<div class="cs-title">📅 ผ่อน ${m} เดือน</div>`;
+    html+=`<div class="result-wrap"><table class="compare-table"><thead><tr><th></th>`;
+    selected.forEach(s=>{html+=`<th>${(s.name||fmt(s.price)+'฿').substring(0,15)}</th>`});
+    html+=`</tr></thead><tbody>`;
+    const monthDims=[
+      {label:'ค่างวด/ด.',fmt:v=>fmt(v)+'฿',get:s=>{const r=s.results.find(x=>x.m===m);return r?r.monthly:null},lower:true},
+      {label:'ดอกเบี้ยรวม',fmt:v=>fmt(v)+'฿',get:s=>{const r=s.results.find(x=>x.m===m);return r?r.interest:null},lower:true},
+      {label:'จ่ายทั้งหมด',fmt:v=>fmt(v)+'฿',get:s=>{const r=s.results.find(x=>x.m===m);return r?r.total:null},lower:true},
+      {label:'ดอกเบี้ยจริง',fmt:v=>v!==null?v.toFixed(2)+'%':'-',get:s=>{const r=s.results.find(x=>x.m===m);return r&&s.loan?r.interest/s.loan/(m/12)*100:null},lower:true},
+    ];
+    monthDims.forEach(d=>{
+      const vals=selected.map(d.get);
+      const b=bestOf(vals,d.lower);
+      html+=`<tr><td>${d.label}</td>`;
+      selected.forEach((s,i)=>{html+=cell(vals[i],b,d.fmt)});
+      html+=`</tr>`;
+    });
+    html+=`</tbody></table></div></div>`;
+  });
+
+  // === Section 3: สรุปคะแนน ===
+  html+=`<div class="compare-section cs-score">`;
+  html+=`<div class="cs-title">⭐ สรุปคะแนน</div>`;
   const scored=selected.map((s,i)=>{
     const best=s.results[0];
     const effRate=s.loan?best.interest/s.loan/(best.m/12)*100:99;
     const intRatio=s.loan?best.interest/s.loan*100:99;
-    return{idx:i,name:s.name||fmt(s.price)+'฿',score:effRate*0.5+intRatio*0.3+(best.m/12)*0.2,effRate,intRatio};
+    const score=effRate*0.5+intRatio*0.3+(best.m/12)*0.2;
+    return{idx:i,name:s.name||fmt(s.price)+'฿',score,effRate,intRatio,totalInterest:best.interest};
   }).sort((a,b)=>a.score-b.score);
-  html+=`<div class="verdict">🏆 แนะนำ: <b>${scored[0].name}</b> — อัตราดอกเบี้ยจริง ${scored[0].effRate.toFixed(2)}%, สัดส่วนดอกเบี้ย ${scored[0].intRatio.toFixed(1)}%</div>`;
+  const winner=scored[0];
+  html+=`<div class="verdict">🏆 แนะนำ: <b>${winner.name}</b> — ดอกเบี้ยจริง ${winner.effRate.toFixed(2)}%, สัดส่วนดอกเบี้ย ${winner.intRatio.toFixed(1)}%, ดอกเบี้ยรวม ${fmt(winner.totalInterest)} บาท</div>`;
+  html+=`<div class="result-wrap"><table class="compare-table"><thead><tr><th></th>`;
+  selected.forEach(s=>{html+=`<th>${(s.name||fmt(s.price)+'฿').substring(0,15)}</th>`});
+  html+=`</tr></thead><tbody>`;
+  html+=`<tr><td>ดอกเบี้ยจริง</td>`;
+  scored.forEach(s=>{html+=`<td>${s.effRate.toFixed(2)}%</td>`});
+  html+=`</tr><tr><td>สัดส่วนดอกเบี้ย</td>`;
+  scored.forEach(s=>{html+=`<td>${s.intRatio.toFixed(1)}%</td>`});
+  html+=`</tr><tr><td>ดอกเบี้ยรวม</td>`;
+  scored.forEach(s=>{html+=`<td>${fmt(s.totalInterest)}฿</td>`});
+  html+=`</tr><tr><td>⭐ คะแนน</td>`;
+  const scoreBest=bestOf(scored.map(s=>s.score),true);
+  scored.forEach(s=>{
+    const cls=s.score===scoreBest?' class="best-cell"':'';
+    html+=`<td${cls}>${s.score.toFixed(1)}</td>`;
+  });
+  html+=`</tr></tbody></table></div></div>`;
 
   const el=document.getElementById('compare-result');
   el.innerHTML=html;
