@@ -107,12 +107,15 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
 .toggle-h span{font-size:.85rem;font-weight:600;color:var(--muted)}
 .toggle-h .arrow{transition:.3s;font-size:.7rem}
 .toggle-h .arrow.open{transform:rotate(180deg)}
-.history-item{background:var(--p5);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:.8rem}
-.history-item .hi-head{display:flex;justify-content:space-between;margin-bottom:3px}
+.history-item{background:var(--p5);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:.8rem;cursor:pointer;transition:.15s;border:2px solid transparent}
+.history-item:hover{border-color:var(--accent2);background:#fff3e0}
+.history-item .hi-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
 .history-item .hi-type{font-weight:600;color:var(--accent)}
 .history-item .hi-date{color:var(--muted);font-size:.75rem}
 .history-item .hi-details{color:var(--text);line-height:1.4}
 .history-item .hi-name{font-weight:600;color:var(--accent2);font-size:.78rem;margin-bottom:2px}
+.history-item .hi-del{background:none;border:none;color:#ef5350;cursor:pointer;font-size:.85rem;padding:2px 6px;border-radius:4px;flex-shrink:0}
+.history-item .hi-del:hover{background:rgba(239,83,80,.15)}
 .empty{text-align:center;color:var(--muted);font-size:.85rem;padding:12px 0}
 @media(max-width:360px){.container{padding:8px}.card{padding:10px}.tab-btn{padding:8px 20px;font-size:.82rem}}
 </style>
@@ -137,13 +140,13 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
         </div>
         <div class="field">
           <label>ราคารถ (บาท)</label>
-          <input type="text" id="car-price" placeholder="เช่น 800,000" inputmode="numeric">
+          <input type="text" id="car-price" placeholder="เช่น 800,000" inputmode="numeric" oninput="syncDown('car','pct')">
         </div>
         <div class="field">
           <label>เงินดาวน์</label>
           <div class="down-dual">
             <div class="field down-input">
-              <input type="number" id="car-down-pct" value="15" min="0" max="100" oninput="syncDown('car','pct')">
+              <input type="number" id="car-down-pct" value="25" min="0" max="100" oninput="syncDown('car','pct')">
               <span class="down-suffix">%</span>
             </div>
             <div class="down-arrow">⇄</div>
@@ -177,7 +180,7 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
       <div id="home-form" class="card" style="display:none">
         <div class="field">
           <label>ราคาบ้าน / วงเงินกู้ (บาท)</label>
-          <input type="text" id="home-price" placeholder="เช่น 3,000,000" inputmode="numeric">
+          <input type="text" id="home-price" placeholder="เช่น 3,000,000" inputmode="numeric" oninput="syncDown('home','pct')">
         </div>
         <div class="field">
           <label>เงินดาวน์</label>
@@ -429,6 +432,7 @@ function getHistory(){try{return JSON.parse(getCookie2('calc_history')||'[]')}ca
 function saveHistory(item){
   const h=getHistory();
   item.date=new Date().toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'});
+  item.id=Date.now();
   h.unshift(item);if(h.length>20)h.length=20;
   setCookie('calc_history',JSON.stringify(h),30);renderHistory();
 }
@@ -436,12 +440,57 @@ function renderHistory(){
   const h=getHistory(),el=document.getElementById('history-list'),btn=document.getElementById('clear-h-btn');
   if(!h.length){el.innerHTML='<div class="empty">ยังไม่มีประวัติ</div>';btn.style.display='none';return}
   btn.style.display='';
-  el.innerHTML=h.map(item=>{
+  el.innerHTML=h.map((item,i)=>{
     const icon=item.type==='car'?'🚗':'🏠';
     const resText=item.results?item.results.map(r=>`${r.m||'?'}เดือน: ${fmt(r.monthly||0)}/เดือน`).join(' | '):'';
     const nameText=item.name?`<div class="hi-name">${item.name}</div>`:'';
-    return `<div class="history-item"><div class="hi-head"><span class="hi-type">${icon} ${item.type==='car'?'รถยนต์':'บ้าน'}</span><span class="hi-date">${item.date}</span></div>${nameText}<div class="hi-details">${resText}</div></div>`;
+    return `<div class="history-item" onclick="viewHistory(${i})"><div class="hi-head"><span class="hi-type">${icon} ${item.type==='car'?'รถยนต์':'บ้าน'}</span><span><span class="hi-date">${item.date}</span> <button class="hi-del" onclick="event.stopPropagation();deleteHistoryItem(${i})" title="ลบ">✕</button></span></div>${nameText}<div class="hi-details">${resText}</div></div>`;
   }).join('');
+}
+function viewHistory(idx){
+  const h=getHistory();if(!h[idx])return;
+  const item=h[idx];
+  const icon=item.type==='car'?'🚗':'🏠';
+  const title=`${icon} ผลลัพธ์${item.type==='car'?'รถยนต์':'บ้าน'} (${item.date})`;
+  let info=`<div class="info">`;
+  if(item.name)info+=`<b>${item.name}</b><br>`;
+  if(item.type==='car'){
+    info+=`ราคารถ <b>${fmt(item.price)}</b> บาท | ดาวน์ ${item.downPct}%<br>`;
+    info+=`วิธีคิด: ${item.method==='flat'?'Flat Rate':'Effective Rate'}</div>`;
+  }else{
+    info+=`ราคาบ้าน <b>${fmt(item.price)}</b> บาท | ดาวน์ ${item.downPct}%<br>`;
+    info+=`ดอกเบี้ย ${item.rate}% | ${item.years} ปี</div>`;
+  }
+  let table=`<div class="result-wrap"><table class="result-table"><thead><tr>`;
+  if(item.type==='car'){
+    table+=`<th>งวด</th><th>ดอกเบี้ย</th><th>ค่างวด/เดือน</th><th>ดอกเบี้ยรวม</th><th>จ่ายทั้งหมด</th></tr></thead><tbody>`;
+    item.results.forEach((r,i)=>{
+      const cls=i===0?' class="best"':'';
+      table+=`<tr${cls}><td>${r.m} เดือน</td><td>${r.rate}%</td><td>${fmt(r.monthly)} บาท</td><td>${fmt(r.interest)} บาท</td><td>${fmt(r.total)} บาท</td></tr>`;
+    });
+    if(item.results.length>1){
+      const maxInt=Math.max(...item.results.map(r=>r.interest));
+      const minInt=Math.min(...item.results.map(r=>r.interest));
+      table+=`<tr><td colspan="3" style="text-align:center;color:var(--muted)">ผลต่างดอกเบี้ยสูงสุด-ต่ำสุด</td><td colspan="2" style="color:#ef5350;font-weight:700">${fmt(maxInt-minInt)} บาท</td></tr>`;
+    }
+  }else{
+    table+=`<th>#</th><th>ค่างวด</th><th>ดอกเบี้ยรวม</th><th>จ่ายทั้งหมด</th></tr></thead><tbody>`;
+    item.results.forEach(r=>{
+      table+=`<tr><td>${r.m} งวด</td><td>${fmt(r.monthly)} บาท</td><td>${fmt(r.interest)} บาท</td><td>${fmt(r.total)} บาท</td></tr>`;
+    });
+  }
+  table+=`</tbody></table></div>`;
+  document.getElementById('result-title').textContent=title;
+  document.getElementById('result-body').innerHTML=info+table;
+  document.getElementById('result-panel').classList.add('show');
+  document.getElementById('main-layout').classList.add('calculated');
+  syncPanelHeights();
+  if(window.innerWidth<768)document.getElementById('result-panel').scrollIntoView({behavior:'smooth'});
+}
+function deleteHistoryItem(idx){
+  if(!confirm('ลบรายการนี้?'))return;
+  const h=getHistory();h.splice(idx,1);
+  setCookie('calc_history',JSON.stringify(h),30);renderHistory();
 }
 function toggleHistory(){const el=document.getElementById('history-list'),arrow=document.getElementById('h-arrow'),open=el.style.display==='none';el.style.display=open?'':'none';arrow.classList.toggle('open',open)}
 function clearHistory(){if(!confirm('ล้างประวัติทั้งหมด?'))return;deleteCookie('calc_history');document.getElementById('history-list').innerHTML='<div class="empty">ยังไม่มีประวัติ</div>';document.getElementById('clear-h-btn').style.display='none';document.getElementById('history-list').style.display='none';document.getElementById('h-arrow').classList.remove('open')}
