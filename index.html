@@ -1077,12 +1077,14 @@ function runCompare(){
     const intRatio=s.loan?best.interest/s.loan*100:99;
     const score=effRate*0.5+intRatio*0.3+(best.m/12)*0.2;
     return{idx:i,name:s.name||fmt(s.price)+'฿',score,effRate,intRatio,totalInterest:best.interest};
-  }).sort((a,b)=>a.score-b.score);
-  const winner=scored[0];
+  });
+  // Find winner (lowest score) — keep original order for table
+  const winner=[...scored].sort((a,b)=>a.score-b.score)[0];
   html+=`<div class="verdict">🏆 แนะนำ: <b>${winner.name}</b> — ดอกเบี้ยจริง ${winner.effRate.toFixed(2)}%, สัดส่วนดอกเบี้ย ${winner.intRatio.toFixed(1)}%, ดอกเบี้ยรวม ${fmt(winner.totalInterest)} บาท</div>`;
   html+=`<div class="result-wrap"><table class="compare-table"><thead><tr><th></th>`;
   selected.forEach(s=>{html+=`<th>${(s.name||fmt(s.price)+'฿').substring(0,15)}</th>`});
   html+=`</tr></thead><tbody>`;
+  // Render in selected order (not sorted)
   html+=`<tr><td>ดอกเบี้ยจริง</td>`;
   scored.forEach(s=>{html+=`<td>${s.effRate.toFixed(2)}%</td>`});
   html+=`</tr><tr><td>สัดส่วนดอกเบี้ย</td>`;
@@ -1090,7 +1092,7 @@ function runCompare(){
   html+=`</tr><tr><td>ดอกเบี้ยรวม</td>`;
   scored.forEach(s=>{html+=`<td>${fmt(s.totalInterest)}฿</td>`});
   html+=`</tr><tr><td>⭐ คะแนน</td>`;
-  const scoreBest=bestOf(scored.map(s=>s.score),true);
+  const scoreBest=Math.min(...scored.map(s=>s.score));
   scored.forEach(s=>{
     const cls=s.score===scoreBest?' class="best-cell"':'';
     html+=`<td${cls}>${s.score.toFixed(1)}</td>`;
