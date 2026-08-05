@@ -344,9 +344,9 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
 </div>
 
 <script>
-function setCookie(n,v,d){const x=new Date();x.setTime(x.getTime()+d*864e6);document.cookie=n+"="+encodeURIComponent(v)+";expires="+x.toUTCString()+";path=/;SameSite=Strict"}
-function getCookie2(n){const m=document.cookie.match(new RegExp('(?:^|; )'+n+'=([^;]*)'));return m?decodeURIComponent(m[1]):null}
-function deleteCookie(n){document.cookie=n+"=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;SameSite=Strict"}
+function setLS(n,v){try{localStorage.setItem(n,v)}catch(e){}}
+function getLS(n){try{return localStorage.getItem(n)}catch(e){return null}}
+function delLS(n){try{localStorage.removeItem(n)}catch(e){}}
 function fmt(n){return Math.round(n).toLocaleString('en-US')}
 
 // --- Freebies ---
@@ -590,13 +590,13 @@ function calcHome(){
 }
 
 // --- History ---
-function getHistory(){try{return JSON.parse(getCookie2('calc_history')||'[]')}catch(e){return[]}}
+function getHistory(){try{return JSON.parse(getLS('calc_history')||'[]')}catch(e){return[]}}
 function saveHistory(item){
   const h=getHistory();
   item.date=new Date().toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'});
   item.id=Date.now();
   h.unshift(item);if(h.length>20)h.length=20;
-  setCookie('calc_history',JSON.stringify(h),30);renderHistory();
+  setLS('calc_history',JSON.stringify(h));renderHistory();
 }
 function renderHistory(){
   const h=getHistory(),el=document.getElementById('history-list'),btn=document.getElementById('clear-h-btn');
@@ -650,10 +650,10 @@ function viewHistory(idx){
 function deleteHistoryItem(idx){
   if(!confirm('ลบรายการนี้?'))return;
   const h=getHistory();h.splice(idx,1);
-  setCookie('calc_history',JSON.stringify(h),30);renderHistory();
+  setLS('calc_history',JSON.stringify(h));renderHistory();
 }
 function toggleHistory(){const el=document.getElementById('history-list'),arrow=document.getElementById('h-arrow'),open=el.style.display==='none';el.style.display=open?'':'none';arrow.classList.toggle('open',open)}
-function clearHistory(){if(!confirm('ล้างประวัติทั้งหมด?'))return;deleteCookie('calc_history');document.getElementById('history-list').innerHTML='<div class="empty">ยังไม่มีประวัติ</div>';document.getElementById('clear-h-btn').style.display='none';document.getElementById('history-list').style.display='none';document.getElementById('h-arrow').classList.remove('open')}
+function clearHistory(){if(!confirm('ล้างประวัติทั้งหมด?'))return;delLS('calc_history');document.getElementById('history-list').innerHTML='<div class="empty">ยังไม่มีประวัติ</div>';document.getElementById('clear-h-btn').style.display='none';document.getElementById('history-list').style.display='none';document.getElementById('h-arrow').classList.remove('open')}
 renderHistory();
 
 // --- Compare ---
