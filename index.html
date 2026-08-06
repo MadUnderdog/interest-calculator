@@ -1070,11 +1070,11 @@ function editHistoryItem(idx){
     document.getElementById('car-form').style.display='';
     document.getElementById('home-form').style.display='none';
     document.getElementById('car-name').value=item.name||'';
-    document.getElementById('car-price').value=item.price||'';
+    document.getElementById('car-price').value=item.price?item.price.toLocaleString():'';
     document.getElementById('car-discount').value=item.discount||'';
     document.getElementById('car-discount-down').checked=!!item.discountDown;
     document.getElementById('car-down-pct').value=item.downPct||25;
-    document.getElementById('car-down-amt').value='';
+    document.getElementById('car-down-amt').value=item.effectiveDown?item.effectiveDown.toLocaleString():'';
     ['48','60','72','84'].forEach(m=>{
       const r=item.results?item.results.find(x=>x.m===+m):null;
       document.getElementById('rate'+m).value=r?r.rate:'';
@@ -1095,7 +1095,7 @@ function editHistoryItem(idx){
     document.querySelectorAll('.tab-btn')[1].classList.add('active');
     document.getElementById('car-form').style.display='none';
     document.getElementById('home-form').style.display='';
-    document.getElementById('home-price').value=item.price||'';
+    document.getElementById('home-price').value=item.price?item.price.toLocaleString():'';
     document.getElementById('home-down-pct').value=item.downPct||20;
     document.getElementById('home-down-amt').value='';
     document.getElementById('home-term').value=item.years||25;
@@ -1109,8 +1109,6 @@ function editHistoryItem(idx){
     setEditMode(idx,'home');
     document.getElementById('home-form').scrollIntoView({behavior:'smooth',block:'start'});
   }
-  document.getElementById('result-panel').classList.remove('show');
-  document.getElementById('main-layout').classList.remove('calculated');
 }
 
 // --- Compare ---
