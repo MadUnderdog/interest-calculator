@@ -1046,7 +1046,9 @@ function clearCarForm(){
     document.getElementById('pv'+m).value='';
   });
   document.querySelector('input[name="car-method"][value="flat"]').checked=true;
-  document.getElementById('freebies-preview').innerHTML='';
+  document.querySelectorAll('.modal-item input[type="checkbox"]').forEach(cb=>cb.checked=true);
+  selectedFreebies=FREEBIE_LABELS.slice();
+  renderFreebiesPreview();
   document.getElementById('discount-status').style.display='none';
 }
 function clearHomeForm(){
