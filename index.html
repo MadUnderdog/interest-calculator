@@ -765,7 +765,7 @@ function calcCar(){
   table+=`</tbody></table></div>`;
 
   // Proposal button
-  table+=`<div style="text-align:center;margin-top:10px"><button class="btn btn-secondary" style="width:auto;display:inline-block" onclick="showProposal()">📄 ใบเสนอราคา</button></div>`;
+  table+=`<div style="text-align:center;margin-top:10px"><button class="btn btn-secondary" style="width:auto;display:inline-block" onclick="showProposal()">📄 ใบเสนอราคา</button><button class="btn-edit" onclick="editHistoryItem(currentViewIdx)">✏️ แก้ไข</button></div>`;
 
   document.getElementById('result-title').textContent='🚗 ผลลัพธ์สินเชื่อรถยนต์';
   document.getElementById('result-body').innerHTML=info+table;
@@ -780,10 +780,12 @@ function calcCar(){
     carData.id=h[editMode.idx].id;
     h[editMode.idx]=carData;
     setLS('calc_history',JSON.stringify(h));
+    currentViewIdx=editMode.idx;
     renderHistory();
     setEditMode(null);
   }else{
     saveHistory(carData);
+    currentViewIdx=0;
   }
 }
 
@@ -944,10 +946,12 @@ function calcHome(){
     homeData.id=h[editMode.idx].id;
     h[editMode.idx]=homeData;
     setLS('calc_history',JSON.stringify(h));
+    currentViewIdx=editMode.idx;
     renderHistory();
     setEditMode(null);
   }else{
     saveHistory(homeData);
+    currentViewIdx=0;
   }
 }
 
@@ -965,7 +969,8 @@ function renderHistory(){
   if(!h.length){el.innerHTML='<div class="empty">ยังไม่มีประวัติ</div>';btn.style.display='none';return}
   btn.style.display='';
   el.innerHTML=h.map((item,i)=>{
-    const icon=item.type==='car'?'🚗':'🏠';
+    currentViewIdx=idx;
+  const icon=item.type==='car'?'🚗':'🏠';
     const resText=item.results?item.results.map(r=>`${r.m||'?'}เดือน: ${fmt(r.monthly||0)}/เดือน`).join(' | '):'';
     const nameText=item.name?` — ${item.name}`:'';
     return `<div class="history-item" onclick="viewHistory(${i})"><div class="hi-head"><span class="hi-type">${icon} ${item.type==='car'?'รถยนต์':'บ้าน'}${nameText}</span><span><span class="hi-date">${item.date}</span> <button class="hi-del" onclick="event.stopPropagation();deleteHistoryItem(${i})" title="ลบ">✕</button></span></div><div class="hi-details">${resText}</div></div>`;
@@ -1020,6 +1025,7 @@ renderHistory();
 
 // --- Edit Mode ---
 let editMode=null;
+let currentViewIdx=0; // track which history item is being viewed
 function setEditMode(idx,type){
   editMode=idx!==null?{idx,type}:null;
   const carBtn=document.getElementById('car-calc-btn');
@@ -1078,7 +1084,7 @@ function editHistoryItem(idx){
     ['48','60','72','84'].forEach(m=>{
       const r=item.results?item.results.find(x=>x.m===+m):null;
       document.getElementById('rate'+m).value=r?r.rate:'';
-      document.getElementById('pv'+m).value='';
+      document.getElementById('pv'+m).value=r?fmt(r.monthly):'';
     });
     const methodRadio=document.querySelector('input[name="car-method"][value="'+(item.method||'flat')+'"]');
     if(methodRadio)methodRadio.checked=true;
