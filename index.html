@@ -88,8 +88,10 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
 .btn-secondary{background:var(--p3);color:var(--accent2);margin-top:6px;font-size:.85rem;border:2px solid var(--accent2)}
 .btn-secondary:hover{background:var(--p4)}
 .btn-clear-h{background:#ef5350;color:#fff;margin-top:6px;font-size:.85rem}
-.btn-row{display:flex;gap:8px;margin-top:6px}
-.btn-row .btn{flex:1}
+.btn-row{display:flex;gap:6px;margin-top:6px}
+.btn-row .btn{flex:1;font-size:.82rem;padding:9px 6px}
+.btn-edit{background:linear-gradient(135deg,#ff9800,#f57c00);color:#fff;border:none;font-size:.78rem;padding:5px 10px;border-radius:6px;cursor:pointer;font-weight:600;margin-left:6px}
+.btn-edit:active{transform:scale(.97)}
 
 /* Result Panel */
 .result-panel{display:none}
@@ -296,7 +298,10 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
         </div>
         <button class="btn btn-secondary" onclick="openFreebiesModal()">🎁 เลือกของแถม</button>
         <div id="freebies-preview" class="freebies-tags" style="margin-top:6px"></div>
-        <button class="btn btn-calc" onclick="calcCar()">คำนวณ</button>
+        <div class="btn-row">
+          <button class="btn btn-calc" id="car-calc-btn" onclick="calcCar()">🔢 คำนวณ</button>
+          <button class="btn btn-secondary" onclick="clearCarForm()" style="margin-top:0">🗑️ ล้างค่า</button>
+        </div>
       </div>
 
       <!-- Home Loan -->
@@ -341,7 +346,10 @@ h1{text-align:center;font-size:1.15rem;margin:8px 0 10px;background:linear-gradi
           <button class="btn btn-secondary" onclick="addHomeRatePeriod()" style="margin-top:6px;font-size:.8rem;padding:6px">+ เพิ่มช่วง</button>
         </div>
         <div style="font-size:.72rem;color:var(--muted);margin:4px 0">💡 เลือกประเภทลูกค้าเพื่อเติมค่าเริ่มต้นอัตโนมัติ</div>
-        <button class="btn btn-calc" onclick="calcHome()">คำนวณ</button>
+        <div class="btn-row">
+          <button class="btn btn-calc" id="home-calc-btn" onclick="calcHome()">🔢 คำนวณ</button>
+          <button class="btn btn-secondary" onclick="clearHomeForm()" style="margin-top:0">🗑️ ล้างค่า</button>
+        </div>
       </div>
 
       <!-- History -->
@@ -476,7 +484,7 @@ function getLoan(){
 }
 
 function calcMonthly(loan,ratePct,months,method){
-  if(!loan||!ratePct||ratePct<=0)return 0;
+  if(!loan||ratePct<0)return 0;
   if(method==='flat'){
     return (loan+loan*ratePct/100*(months/12))/months;
   }else{
@@ -510,7 +518,7 @@ function rateChanged(months){
   const method=document.querySelector('input[name="car-method"]:checked').value;
   const rate=+document.getElementById('rate'+months).value;
   const el=document.getElementById('pv'+months);
-  if(loan<=0||!rate||rate<=0){el.value='';_syncing=false;return}
+  if(loan<=0||rate<0){el.value='';_syncing=false;return}
   const monthly=calcMonthly(loan,rate,months,method);
   el.value=fmt(Math.round(monthly));
   _syncing=false;
@@ -523,7 +531,7 @@ function monthlyChanged(months){
   const rate=+document.getElementById('rate'+months).value;
   const method=document.querySelector('input[name="car-method"]:checked').value;
   const monthlyVal=+(document.getElementById('pv'+months).value.replace(/[^0-9]/g,''));
-  if(!price||monthlyVal<=0||!rate||rate<=0){_syncing=false;return}
+  if(!price||monthlyVal<=0||rate<0){_syncing=false;return}
 
   // Solve for loan amount that gives this monthly payment
   let loan;
@@ -676,6 +684,7 @@ function switchTab(tab){
 
 // --- Car calc ---
 function calcCar(){
+  const isEdit=editMode&&editMode.type==='car';
   let name=document.getElementById('car-name').value.trim();
   const price=getVal('car-price');
   const discount=getVal('car-discount');
@@ -710,7 +719,7 @@ function calcCar(){
   durations.forEach(m=>{
     const rateEl=document.getElementById('rate'+m);
     const rate=+rateEl.value;
-    if(!rate||rate<=0){rateEl.style.borderColor='#ef5350';return;}
+    if(rate<0){rateEl.style.borderColor='#ef5350';return;}
     rateEl.style.borderColor='#e0e0e0';
     filledCount++;
     const years=m/12;
@@ -764,7 +773,18 @@ function calcCar(){
   document.getElementById('main-layout').classList.add('calculated');
   syncPanelHeights();
   document.getElementById('result-panel').scrollIntoView({behavior:'smooth',block:'start'});
-  saveHistory({type:'car',name:name||null,price,discount,discountDown,effectivePrice,downPct:actualPct,effectiveDown,loan,method,freebies:selectedFreebies.slice(),results:results.map(r=>({m:r.months,rate:r.rate,monthly:Math.round(r.monthly),interest:Math.round(r.totalInterest),total:Math.round(r.totalPayment)}))});
+  const carData={type:'car',name:name||null,price,discount,discountDown,effectivePrice,downPct:actualPct,effectiveDown,loan,method,freebies:selectedFreebies.slice(),results:results.map(r=>({m:r.months,rate:r.rate,monthly:Math.round(r.monthly),interest:Math.round(r.totalInterest),total:Math.round(r.totalPayment)}))};
+  if(isEdit){
+    const h=getHistory();
+    carData.date=h[editMode.idx].date;
+    carData.id=h[editMode.idx].id;
+    h[editMode.idx]=carData;
+    setLS('calc_history',JSON.stringify(h));
+    renderHistory();
+    setEditMode(null);
+  }else{
+    saveHistory(carData);
+  }
 }
 
 // --- Home calc ---
@@ -844,6 +864,7 @@ function recalcHomePreview(){renderHomeRatePeriods()}
 renderHomeRatePeriods();
 
 function calcHome(){
+  const isEdit=editMode&&editMode.type==='home';
   const price=getVal('home-price');
   const downPct=parseFloat(document.getElementById('home-down-pct').value)||0;
   const downAmt=getVal('home-down-amt');
@@ -916,7 +937,18 @@ function calcHome(){
   syncPanelHeights();
   document.getElementById('result-panel').scrollIntoView({behavior:'smooth',block:'start'});
   const customerType=document.querySelector('input[name="home-customer"]:checked')?.value||'retail';
-  saveHistory({type:'home',price,downPct:actualPct,mrr,years,customerType,ratePeriods:JSON.parse(JSON.stringify(homeRatePeriods)),results:[{m:totalMonths,monthly:Math.round(schedule[0].payment),interest:Math.round(totalInterest),total:Math.round(totalPayment)}]});
+  const homeData={type:'home',price,downPct:actualPct,mrr,years,customerType,ratePeriods:JSON.parse(JSON.stringify(homeRatePeriods)),results:[{m:totalMonths,monthly:Math.round(schedule[0].payment),interest:Math.round(totalInterest),total:Math.round(totalPayment)}]};
+  if(isEdit){
+    const h=getHistory();
+    homeData.date=h[editMode.idx].date;
+    homeData.id=h[editMode.idx].id;
+    h[editMode.idx]=homeData;
+    setLS('calc_history',JSON.stringify(h));
+    renderHistory();
+    setEditMode(null);
+  }else{
+    saveHistory(homeData);
+  }
 }
 
 // --- History ---
@@ -969,7 +1001,7 @@ function viewHistory(idx){
     });
   }
   table+=`</tbody></table></div>`;
-  if(item.type==='car')table+=`<div style="text-align:center;margin-top:10px"><button class="btn btn-secondary" style="width:auto;display:inline-block" onclick="showProposalFromHistory(${idx})">📄 ใบเสนอราคา</button></div>`;
+  if(item.type==='car')table+=`<div style="text-align:center;margin-top:10px"><button class="btn btn-secondary" style="width:auto;display:inline-block" onclick="showProposalFromHistory(${idx})">📄 ใบเสนอราคา</button><button class="btn-edit" onclick="editHistoryItem(${idx})">✏️ แก้ไข</button></div>`;
   document.getElementById('result-title').textContent=title;
   document.getElementById('result-body').innerHTML=info+table;
   document.getElementById('result-panel').classList.add('show');
@@ -985,6 +1017,99 @@ function deleteHistoryItem(idx){
 function toggleHistory(){const el=document.getElementById('history-list'),arrow=document.getElementById('h-arrow'),open=el.style.display==='none';el.style.display=open?'':'none';arrow.classList.toggle('open',open)}
 function clearHistory(){if(!confirm('ล้างประวัติทั้งหมด?'))return;delLS('calc_history');document.getElementById('history-list').innerHTML='<div class="empty">ยังไม่มีประวัติ</div>';document.getElementById('clear-h-btn').style.display='none';document.getElementById('history-list').style.display='none';document.getElementById('h-arrow').classList.remove('open')}
 renderHistory();
+
+// --- Edit Mode ---
+let editMode=null;
+function setEditMode(idx,type){
+  editMode=idx!==null?{idx,type}:null;
+  const carBtn=document.getElementById('car-calc-btn');
+  const homeBtn=document.getElementById('home-calc-btn');
+  if(type==='car'){
+    carBtn.textContent=idx!==null?'💾 บันทึก':'🔢 คำนวณ';
+  }else if(type==='home'){
+    homeBtn.textContent=idx!==null?'💾 บันทึก':'🔢 คำนวณ';
+  }else{
+    carBtn.textContent='🔢 คำนวณ';
+    homeBtn.textContent='🔢 คำนวณ';
+  }
+}
+function clearCarForm(){
+  setEditMode(null);
+  document.getElementById('car-name').value='';
+  document.getElementById('car-price').value='';
+  document.getElementById('car-discount').value='';
+  document.getElementById('car-discount-down').checked=false;
+  document.getElementById('car-down-pct').value='25';
+  document.getElementById('car-down-amt').value='';
+  ['48','60','72','84'].forEach(m=>{
+    document.getElementById('rate'+m).value='';
+    document.getElementById('pv'+m).value='';
+  });
+  document.querySelector('input[name="car-method"][value="flat"]').checked=true;
+  document.getElementById('freebies-preview').innerHTML='';
+  document.getElementById('discount-status').style.display='none';
+}
+function clearHomeForm(){
+  setEditMode(null);
+  document.getElementById('home-price').value='';
+  document.getElementById('home-down-pct').value='20';
+  document.getElementById('home-down-amt').value='';
+  document.getElementById('home-term').value='25';
+  document.getElementById('home-mrr').value='6.85';
+  document.querySelector('input[name="home-customer"][value="retail"]').checked=true;
+  applyHomePreset();
+}
+function editHistoryItem(idx){
+  const h=getHistory();if(!h[idx])return;
+  const item=h[idx];
+  if(item.type==='car'){
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelector('.tab-btn').classList.add('active');
+    document.getElementById('car-form').style.display='';
+    document.getElementById('home-form').style.display='none';
+    document.getElementById('car-name').value=item.name||'';
+    document.getElementById('car-price').value=item.price||'';
+    document.getElementById('car-discount').value=item.discount||'';
+    document.getElementById('car-discount-down').checked=!!item.discountDown;
+    document.getElementById('car-down-pct').value=item.downPct||25;
+    document.getElementById('car-down-amt').value='';
+    ['48','60','72','84'].forEach(m=>{
+      const r=item.results?item.results.find(x=>x.m===+m):null;
+      document.getElementById('rate'+m).value=r?r.rate:'';
+      document.getElementById('pv'+m).value='';
+    });
+    const methodRadio=document.querySelector('input[name="car-method"][value="'+(item.method||'flat')+'"]');
+    if(methodRadio)methodRadio.checked=true;
+    if(item.freebies){
+      document.querySelectorAll('.modal-item input[type="checkbox"]').forEach((cb,i)=>{
+        cb.checked=item.freebies.includes(i);
+      });
+      renderFreebiesPreview();
+    }
+    setEditMode(idx,'car');
+    document.getElementById('car-form').scrollIntoView({behavior:'smooth',block:'start'});
+  }else{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-btn')[1].classList.add('active');
+    document.getElementById('car-form').style.display='none';
+    document.getElementById('home-form').style.display='';
+    document.getElementById('home-price').value=item.price||'';
+    document.getElementById('home-down-pct').value=item.downPct||20;
+    document.getElementById('home-down-amt').value='';
+    document.getElementById('home-term').value=item.years||25;
+    document.getElementById('home-mrr').value=item.mrr||6.85;
+    const custRadio=document.querySelector('input[name="home-customer"][value="'+(item.customerType||'retail')+'"]');
+    if(custRadio)custRadio.checked=true;
+    if(item.ratePeriods){
+      homeRatePeriods=JSON.parse(JSON.stringify(item.ratePeriods));
+      renderHomeRatePeriods();
+    }
+    setEditMode(idx,'home');
+    document.getElementById('home-form').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  document.getElementById('result-panel').classList.remove('show');
+  document.getElementById('main-layout').classList.remove('calculated');
+}
 
 // --- Compare ---
 function renderCompareList(){
